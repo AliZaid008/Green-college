@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>المبنى الحي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=El+Messiri:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: an architect's working sheet. The floor plan is the home page; every other view hangs off it. */
+:root{
+  --paper:#f2f5f0; --surface:#ffffff; --sunk:#e8ede7; --ink:#12261f; --muted:#586b62; --line:#d3dcd5;
+  --accent:#0d7556; --accent-ink:#ffffff; --accent-soft:#dcefe7;
+  --energy:#b56f06; --clean:#c8481f; --waste:#7d5236; --smart:#2a66a8;
+  --good:#1f7a3d; --warn:#a86400; --bad:#b3261e;
+  --display:"El Messiri","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --body:"IBM Plex Sans Arabic","Segoe UI",Tahoma,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#0d1613; --surface:#14201c; --sunk:#0a120f; --ink:#e4eee8; --muted:#93a79d; --line:#27382f;
+    --accent:#3dbf93; --accent-ink:#06231a; --accent-soft:#17352b;
+    --energy:#e5a23a; --clean:#f0825c; --waste:#c79a7c; --smart:#74a9e6;
+    --good:#5fcf85; --warn:#e5a23a; --bad:#f2817a;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0d1613; --surface:#14201c; --sunk:#0a120f; --ink:#e4eee8; --muted:#93a79d; --line:#27382f;
+  --accent:#3dbf93; --accent-ink:#06231a; --accent-soft:#17352b;
+  --energy:#e5a23a; --clean:#f0825c; --waste:#c79a7c; --smart:#74a9e6;
+  --good:#5fcf85; --warn:#e5a23a; --bad:#f2817a;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65}
+h1,h2,h3{font-family:var(--display);line-height:1.25;margin:0;text-wrap:balance;font-weight:700}
+h1{font-size:1.5rem} h2{font-size:1.35rem} h3{font-size:1.05rem;font-weight:500}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+
+header.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;gap:10px;align-items:center;margin-inline-end:auto}
+.brand svg{width:38px;height:38px;flex:none}
+.brand b{font-family:var(--display);font-size:1.3rem;display:block;line-height:1.1}
+.brand span{font-size:.8rem;color:var(--muted)}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{padding:7px 12px;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:500;font-size:.95rem}
+nav a:hover{color:var(--ink);background:var(--sunk)}
+nav a[aria-current="page"]{background:var(--ink);color:var(--paper)}
+.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.875rem}
+.ghost:hover{border-color:var(--ink)}
+
+main{max-width:1120px;margin:0 auto;padding:22px 16px 60px;display:flex;flex-direction:column;gap:22px}
+section.view{display:none;flex-direction:column;gap:20px}
+section.view.on{display:flex}
+.lede{max-width:65ch;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px}
+@media (max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.stack{display:flex;flex-direction:column;gap:12px}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:2px}
+.tile .v{font-family:var(--mono);font-size:1.6rem;font-weight:500;direction:ltr;unicode-bidi:isolate;text-align:start}
+.tile .k{font-size:.85rem;color:var(--muted)}
+
+.plan{width:100%;overflow-x:auto}
+.plan svg{display:block;width:100%;min-width:560px;height:auto}
+.room rect{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}
+.room{cursor:pointer}
+.room:hover rect,.room:focus-visible rect{stroke:var(--accent);stroke-width:3}
+.room .heat{fill:var(--accent);stroke:none;pointer-events:none}
+.room text{fill:var(--ink);font-family:var(--body);font-size:13px;pointer-events:none}
+.room text.sm{font-size:10.5px}
+.room.garden rect:not(.heat){stroke:var(--good);stroke-dasharray:6 4;fill:color-mix(in srgb,var(--good) 14%,var(--surface))}
+.room .pin{fill:var(--ink)} .room .pint{fill:var(--paper);font-family:var(--mono);font-size:11px}
+.dim{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 4;fill:none}
+.dimt{fill:var(--muted);font-family:var(--mono);font-size:10px}
+
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:500;border:1px solid var(--line);background:var(--surface);white-space:nowrap}
+.chip i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.t-energy i,.bar-energy{background:var(--energy)} .t-clean i,.bar-clean{background:var(--clean)}
+.t-waste i,.bar-waste{background:var(--waste)} .t-smart i,.bar-smart{background:var(--smart)}
+.pill{border-radius:6px;padding:2px 9px;font-size:.8rem;font-weight:600;white-space:nowrap}
+.s-open{background:var(--accent-soft);color:var(--accent)}
+.s-reserved{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.s-approved{background:color-mix(in srgb,var(--smart) 18%,transparent);color:var(--smart)}
+.s-done{background:var(--good);color:var(--surface)}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,input[type=text],input[type=search],textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+textarea{width:100%;min-height:92px;resize:vertical}
+label{font-size:.875rem;font-weight:500;display:flex;flex-direction:column;gap:4px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:9px 16px;font-weight:600}
+.btn:hover{filter:brightness(1.08)} .btn:disabled{opacity:.5;cursor:default}
+.btn.alt{background:none;color:var(--ink);border:1px solid var(--ink)}
+.btn.sm{padding:5px 11px;font-size:.875rem}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:9px;border-inline-start:4px solid var(--line)}
+.card.k-energy{border-inline-start-color:var(--energy)} .card.k-clean{border-inline-start-color:var(--clean)}
+.card.k-waste{border-inline-start-color:var(--waste)} .card.k-smart{border-inline-start-color:var(--smart)}
+.card .head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.card .id{font-family:var(--mono);font-size:.8rem;color:var(--muted);direction:ltr}
+.card .meta{display:flex;gap:6px;flex-wrap:wrap}
+.card details{border-top:1px dashed var(--line);padding-top:8px}
+.card summary{cursor:pointer;font-size:.875rem;font-weight:500;color:var(--accent)}
+.card dl{margin:8px 0 0;display:grid;gap:6px;font-size:.9rem}
+.card dt{font-weight:600;font-size:.8rem;color:var(--muted)} .card dd{margin:0}
+.steps{display:flex;gap:4px;flex-wrap:wrap;font-size:.75rem;margin-top:8px}
+.steps span{padding:2px 8px;border-radius:4px;background:var(--sunk);color:var(--muted)}
+.steps span.on{background:var(--ink);color:var(--paper)}
+.est{font-size:.9rem}
+
+.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:560px){.pipeline{grid-template-columns:1fr 1fr}}
+.pipeline div{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.85rem;background:var(--sunk);color:var(--muted)}
+.pipeline div.on{background:var(--accent-soft);color:var(--ink);border-color:var(--accent)}
+.pipeline b{display:block;font-family:var(--mono);font-size:.75rem;direction:ltr;text-align:start}
+.note{border-inline-start:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);padding:8px 12px;border-radius:6px;font-size:.9rem}
+.note.ok{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,transparent)}
+.note.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+.meter{height:10px;background:var(--sunk);border-radius:99px;overflow:hidden;flex:1;min-width:120px}
+.meter i{display:block;height:100%;background:var(--accent)}
+
+.modes{display:flex;gap:6px;flex-wrap:wrap}
+.modes button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:500}
+.modes button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chat{display:flex;flex-direction:column;gap:10px;min-height:220px;max-height:52vh;overflow-y:auto;padding:4px}
+.msg{max-width:82%;padding:9px 13px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.u{align-self:flex-end;background:var(--ink);color:var(--paper);border-end-end-radius:3px}
+.msg.a{align-self:flex-start;background:var(--sunk);border-end-start-radius:3px}
+.compose{display:flex;gap:8px}
+.compose textarea{min-height:48px;flex:1}
+.starters{display:flex;gap:6px;flex-wrap:wrap}
+.starters button{border:1px dashed var(--line);background:none;border-radius:999px;padding:4px 12px;font-size:.85rem}
+.starters button:hover{border-color:var(--accent);color:var(--accent)}
+
+.bars{display:flex;flex-direction:column;gap:10px}
+.barrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(60px,1fr) 44px;gap:10px;align-items:center;font-size:.9rem}
+.barrow .chip{white-space:normal;border-radius:8px}
+@media (max-width:560px){.barrow{grid-template-columns:1fr;gap:2px}}
+.track{height:16px;background:var(--sunk);border-radius:4px;overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.seg-res{background:var(--warn)} .seg-done{background:var(--good)} .seg-open{background:var(--line)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:start;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-size:.8rem;color:var(--muted);font-weight:600}
+td.n,th.n{font-family:var(--mono);direction:ltr;text-align:end}
+.tw{overflow-x:auto}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.road div{border:1px dashed var(--line);border-radius:var(--r);padding:12px}
+.road b{display:block;font-family:var(--display);font-weight:500}
+#toast{position:fixed;inset-block-end:18px;inset-inline:0;margin:auto;width:max-content;max-width:90vw;background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:8px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+.plan-sec{display:flex;flex-direction:column;gap:10px}
+.plan-sec h3{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.plan-sec h3 small{font-family:var(--body);font-size:.85rem;color:var(--muted);font-weight:400}
+.prow{display:grid;grid-template-columns:42px minmax(0,1fr) 120px;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.prow .rk{font-family:var(--display);font-size:1.6rem;color:var(--accent);text-align:center}
+.prow .why{font-size:.88rem;color:var(--muted)}
+.prow .sc{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
+.letter{border:1px solid var(--line);border-inline-start:4px solid var(--accent);border-radius:8px;padding:14px 16px;background:var(--sunk);white-space:pre-wrap}
+@media print{header.top,footer,#toast,.noprint{display:none!important}section.view{display:none!important}section.view.on{display:flex!important}body{background:#fff}.panel{border:0}}
+.gate{position:fixed;inset:0;z-index:20;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:16px}
+.gate .box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:14px}
+.gate .box svg{width:46px;height:46px}
+footer{max-width:1120px;margin:0 auto;padding:0 16px 30px;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="12" width="20" height="24" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 24h20M16 12v24" stroke="currentColor" stroke-width="1.2"/><path d="M26 22c0-8 4-13 11-14 0 8-3 13-11 14z" fill="var(--accent)"/><path d="M26 22v14" stroke="var(--accent)" stroke-width="2"/></svg>
+      <div><b data-i="name"></b><span data-i="tag"></span></div>
+    </div>
+    <nav id="nav" aria-label="Sections"></nav>
+    <span class="chip" id="roleChip" hidden></span><select id="viewAs" class="noprint" hidden aria-label="View as"></select><button class="ghost" id="signOut" type="button" hidden></button><button class="ghost" id="langBtn" type="button"></button>
+  </div>
+</header>
+
+<main>
+  <!-- BUILDING -->
+  <section class="view" id="v-building">
+    <div class="stack"><h1 data-i="b_h"></h1><p class="lede" data-i="b_lede"></p></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="grid2">
+      <div class="panel stack">
+        <div class="row" style="justify-content:space-between"><h2 data-i="plan_h"></h2><span class="chip muted" data-i="plan_sample"></span></div>
+        <div class="plan" id="plan"></div>
+        <p class="small muted" data-i="plan_hint"></p>
+      </div>
+      <div class="panel stack">
+        <h2 data-i="tracks_h"></h2>
+        <div class="bars" id="trackBars"></div>
+        <h3 data-i="loud_h" style="margin-top:8px"></h3>
+        <div class="tw"><table id="loud"></table></div>
+        <a class="btn" href="#voice" data-i="cta_report" style="text-decoration:none;text-align:center"></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- VOICE + FACTORY -->
+  <section class="view" id="v-voice">
+    <div class="stack"><h1 data-i="v_h"></h1><p class="lede" data-i="v_lede"></p></div>
+    <div class="grid2">
+      <form class="panel stack" id="reportForm">
+        <div class="modes" role="group">
+          <button type="button" id="kProblem" aria-pressed="true" data-i="k_problem"></button>
+          <button type="button" id="kIdea" aria-pressed="false" data-i="k_idea"></button>
+        </div>
+        <label><span id="txtLabel"></span><textarea id="rText" required maxlength="600"></textarea></label>
+        <label><span data-i="place"></span><select id="rRoom"></select></label>
+        <div class="row"><button class="btn" id="rSend" type="submit" data-i="send_factory"></button><span class="small muted" id="rBusy"></span></div>
+        <p class="small muted" data-i="rule"></p>
+      </form>
+      <div class="panel stack" id="factoryOut">
+        <h2 data-i="factory_h"></h2>
+        <div class="pipeline" id="pipe"></div>
+        <div id="result" class="stack"><p class="muted" data-i="factory_empty"></p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATALOGUE -->
+  <section class="view" id="v-catalogue">
+    <div class="stack"><h1 data-i="c_h"></h1><p class="lede" data-i="c_lede"></p></div>
+    <div class="filters">
+      <input type="search" id="fQ">
+      <select id="fTrack"></select><select id="fSize"></select><select id="fStatus"></select><select id="fRoom"></select>
+      <span class="small muted" id="fCount"></span>
+    </div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <!-- ADVISOR -->
+  <section class="view" id="v-advisor">
+    <div class="stack"><h1 data-i="a_h"></h1><p class="lede" data-i="a_lede"></p></div>
+    <div class="modes" role="group" id="modes"></div>
+    <div class="panel stack">
+      <p class="small muted" id="modeNote"></p>
+      <div class="chat" id="chat" aria-live="polite"></div>
+      <div class="starters" id="starters"></div>
+      <form class="compose" id="chatForm">
+        <textarea id="cText" rows="2"></textarea>
+        <div class="stack"><button class="btn" id="cSend" type="submit" data-i="send"></button><button class="btn alt sm" id="cStop" type="button" hidden data-i="stop"></button></div>
+      </form>
+      <div class="row" id="chatTools">
+        <button class="btn alt sm" id="cPublish" type="button" data-i="publish"></button>
+        <button class="ghost" id="cClear" type="button" data-i="clear"></button>
+      </div>
+      <div id="whatif"></div>
+    </div>
+  </section>
+
+  <!-- DEAN -->
+  <section class="view" id="v-dean">
+    <div class="stack"><h1 data-i="dn_h"></h1><p class="lede" data-i="dn_lede"></p></div>
+    <p class="note noprint" id="dReadonly" hidden></p>
+    <div class="panel row noprint" style="justify-content:space-between">
+      <div class="row" id="dSizes">
+        <label><span data-i="dn_grad"></span><select id="dGrad"></select></label>
+        <label><span data-i="dn_assign"></span><select id="dAssign"></select></label>
+      </div>
+      <div class="row">
+        <button class="btn" id="dEndorse" type="button" data-i="dn_endorse"></button><button class="btn" id="dLetter" type="button" data-i="dn_ai"></button>
+        <button class="btn alt sm" id="dCopy" type="button" data-i="dn_copy"></button>
+        <button class="ghost" id="dPrint" type="button" data-i="dn_print"></button>
+      </div>
+    </div>
+    <p class="note ok" id="dBadge" hidden></p>
+    <div class="tiles" id="dTiles"></div>
+    <div class="panel stack" id="dLetterBox" hidden><h2 data-i="dn_letter_h"></h2><div class="letter" id="dLetterText"></div><p class="small muted" data-i="dn_letter_note"></p></div>
+    <div class="grid2">
+      <div class="panel stack" id="dMain"></div>
+      <div class="panel stack" id="dQuick"></div>
+    </div>
+    <p class="small muted" data-i="dn_rule"></p>
+  </section>
+
+  <!-- IMPACT -->
+  <section class="view" id="v-impact">
+    <div class="stack"><h1 data-i="i_h"></h1><p class="lede" data-i="i_lede"></p></div>
+    <div class="panel stack">
+      <h2 data-i="i_pot"></h2>
+      <div class="tw"><table id="impactTable"></table></div>
+      <p class="small muted" data-i="est_note"></p>
+    </div>
+    <div class="grid2">
+      <div class="panel stack"><h2 data-i="i_flow"></h2><div class="bars" id="flowBars"></div>
+        <div class="row small muted"><span class="chip"><i class="seg-open"></i><span data-i="st_open"></span></span><span class="chip"><i class="seg-res"></i><span data-i="st_reserved"></span></span><span class="chip"><i class="seg-done"></i><span data-i="st_done"></span></span></div>
+      </div>
+      <div class="panel stack"><h2 data-i="i_next"></h2><div class="road" id="road"></div></div>
+    </div>
+  </section>
+</main>
+<footer><span data-i="foot"></span> <span id="modeFoot"></span></footer>
+<div id="toast" role="status"></div>
+<div class="gate" id="gate" hidden>
+  <form class="box" id="gateForm">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="12" width="20" height="24" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 24h20M16 12v24" stroke="currentColor" stroke-width="1.2"/><path d="M26 22c0-8 4-13 11-14 0 8-3 13-11 14z" fill="var(--accent)"/><path d="M26 22v14" stroke="var(--accent)" stroke-width="2"/></svg>
+    <h2 data-i="auth_h"></h2><p class="muted" id="gateText"></p>
+    <label><span data-i="auth_email"></span><input type="text" id="gateEmail" inputmode="email" autocomplete="email" dir="ltr" required></label>
+    <button class="btn" id="gateSend" type="submit" data-i="auth_send"></button>
+    <p class="small" id="gateMsg" role="status"></p>
+    <button class="ghost" id="gateLang" type="button"></button>
+  </form>
+</div>
+
+<script>
+"use strict";
+/* ---------- text ---------- */
+const T={
+name:["المبنى الحي","Living Building"],
+tag:["كلية الذكاء الاصطناعي · جامعة بغداد · الطابق الثاني","College of AI · University of Baghdad · 2nd floor"],
+n_building:["المبنى","Building"],n_voice:["صوت المبنى","Voice"],n_catalogue:["الكتالوج","Catalogue"],n_advisor:["المستشار","Advisor"],n_impact:["لوحة الأثر","Impact"],n_dean:["ملخص العميد","Dean's brief"],
+auth_h:["سجّل الدخول","Sign in"],auth_p:["ادخل ببريدك الجامعي. سنرسل لك رابط دخول، فلا تحتاج كلمة مرور.","Use your university email. We'll send you a sign-in link, so there is no password."],
+auth_domains:["البريد المقبول: {d}","Accepted email: {d}"],auth_email:["البريد الجامعي","University email"],auth_send:["أرسل رابط الدخول","Send sign-in link"],
+auth_sent:["أرسلنا الرابط إلى {e}. افتحه من هذا الجهاز.","We sent a link to {e}. Open it on this device."],auth_bad:["هذا البريد ليس من نطاق الجامعة.","That email is not from the university's domain."],
+auth_err:["تعذّر الإرسال. تحقق من البريد وحاول مرة أخرى.","Could not send. Check the address and try again."],auth_refused:["هذا البريد غير مسموح بالتسجيل.","This email is not allowed to sign up."],
+signout:["خروج","Sign out"],
+role_dean:["العميد","Dean"],role_supervisor:["مشرف","Supervisor"],role_student:["طالب","Student"],role_guest:["زائر","Guest"],
+you_are:["أنت: {r}","You: {r}"],view_as:["اعرض كـ {r}","View as {r}"],
+dn_ro:["هذه خطة السنة. يرتّبها النظام تلقائياً ويديرها المشرفون. احجز مشروعاً منها قبل غيرك.","This is the year's plan. The system ranks it and the supervisors run it. Reserve a project from it before someone else does."],
+staff_only:["هذا الإجراء للمشرفين والعميد فقط","Only supervisors and the dean can do this"],
+dn_h:["ملخص العميد","The dean's brief"],
+dn_lede:["صفحة تُقرأ في دقيقة، جاهزة دائماً. النظام يرتّب خطة السنة تلقائياً، والمشرفون يديرونها، ولا يحتاج العميد إلى اتخاذ أي قرار.","A one-minute read, always ready. The system ranks the year's plan by itself, the supervisors run it, and the dean has nothing to decide."],
+dn_vip:["كل شيء جاهز. لا يلزمك أي إجراء. يمكنك اعتماد الخطة بلمسة واحدة إن شئت.","Everything is ready and nothing is needed from you. You can endorse the plan with one tap if you wish."],
+dn_endorse:["اعتمد الخطة","Endorse the plan"],dn_endorsed:["اعتمدها العميد في {d}","Endorsed by the dean on {d}"],dn_unendorse:["ألغِ الاعتماد","Withdraw endorsement"],
+dn_staffnote:["أنت تدير الخطة: حدّد حجمها واكتب رسالتها، فتصل إلى العميد جاهزة.","You run the plan: set its size and write its letter, and it reaches the dean ready."],
+dn_t_prog:["مشروعاً قيد التنفيذ","projects under way"],dn_t_done:["مشروعاً منجزاً","projects done"],
+dn_grad:["مشاريع تخرج يمكن الإشراف عليها","Graduation projects you can supervise"],dn_assign:["مشاريع مواد هذا الفصل","Course projects this semester"],
+dn_ai:["اكتب رسالة الخطة بالذكاء الاصطناعي","Write the plan letter with AI"],dn_copy:["انسخ الخطة","Copy the plan"],dn_print:["اطبع","Print"],
+dn_letter_h:["رسالة إلى العميد","Letter to the dean"],dn_letter_note:["كتبها الذكاء الاصطناعي من بيانات الخطة. راجعها قبل إرسالها.","Written by AI from the plan's data. Review it before sending."],
+dn_quick:["مكاسب سريعة هذا الشهر","Quick wins this month"],dn_quick_s:["للصيانة، بلا كلفة تقريباً","For maintenance, almost no cost"],
+dn_sem:["مشاريع المواد هذا الفصل","Course projects this semester"],dn_sem_s:["لمدرّسي المواد","For course lecturers"],
+dn_gradh:["مشاريع التخرج هذه السنة","Graduation projects this year"],dn_grad_s:["للمشرفين","For supervisors"],
+dn_t_n:["مشروعاً في الخطة","projects in the plan"],dn_t_kwh:["كيلوواط ساعة سنوياً لو نُفّذت","kWh a year if carried out"],dn_t_l:["لتر ماء سنوياً لو نُفّذت","litres of water a year if carried out"],dn_t_kg:["كغم نفايات سنوياً لو نُفّذت","kg of waste a year if carried out"],
+dn_rule:["طريقة الترتيب: ٧٠٪ للأثر التقديري مقارنة بأفكار الوحدة نفسها (على مقياس لوغاريتمي حتى لا تطغى فكرة واحدة كبيرة)، و٣٠٪ لعدد البلاغات عن المشكلة. الأفكار المنجزة لا تدخل الخطة. كل الأرقام تقديرية حتى تُقاس.","Ranking: 70% estimated impact compared with ideas measured in the same unit (on a log scale, so one very large idea does not swamp the rest), 30% number of reports about the problem. Finished ideas are left out. All figures are estimates until measured."],
+dn_none:["لا توجد أفكار من هذا النوع بعد.","No ideas of this kind yet."],dn_why:["أثر تقديري {e} · البلاغات {r} · {p}","Estimated {e} · reports {r} · {p}"],
+dn_inprog:["قيد التنفيذ","Under way"],dn_score:["الأولوية","Priority"],copied:["نُسخت الخطة","Plan copied"],noprint:["الطباعة غير متاحة هنا. انسخ الخطة بدلاً من ذلك.","Printing is not available here. Copy the plan instead."],
+dn_writing:["يكتب الرسالة…","Writing the letter…"],
+
+b_h:["مبنى يسمع مشاكله ويحوّلها إلى مشاريع طلبته","A building that hears its problems and hands them to its students"],
+b_lede:["كل مشكلة في المبنى تصير مشروع مادة أو مشروع تخرج لطالب في الكلية. المبنى يتحسّن كل سنة، والطلبة يعملون على مشاكل حقيقية، والكلفة صفر.","Every problem in the building becomes a course or graduation project for a student of the college. The building improves each year, students work on real problems, and it costs nothing."],
+plan_h:["مخطط الطابق","Floor plan"],plan_sample:["مخطط تقريبي","Approximate layout"],
+plan_hint:["الرقم على كل غرفة هو عدد الأفكار المفتوحة فيها. اضغط على غرفة لعرض أفكارها.","The number on each room is its count of open ideas. Select a room to see them."],
+tracks_h:["المحاور الأربعة للمسابقة","The four competition tracks"],
+loud_h:["أكثر الأماكن شكوى","Places with the most reports"],
+cta_report:["بلّغ عن مشكلة في المبنى","Report a problem in the building"],
+tl_open:["أفكار مفتوحة","Open ideas"],tl_res:["محجوزة","Reserved"],tl_done:["منجزة","Done"],tl_kwh:["كيلوواط ساعة ممكن توفيرها سنوياً","kWh that could be saved per year"],tl_l:["لتر ماء ممكن توفيره سنوياً","Litres of water that could be saved per year"],tl_kg:["كغم نفايات ممكن تجنّبها سنوياً","kg of waste that could be avoided per year"],
+tr_energy:["ترشيد وإدارة الطاقة","Energy rationing and management"],tr_clean:["الطاقة النظيفة والمتجددة","Clean and renewable energy"],tr_waste:["إدارة النفايات وإعادة التدوير","Waste management and recycling"],tr_smart:["تقنيات المباني الذكية المستدامة","Smart sustainable building technology"],
+sz_fix:["إصلاح سريع","Quick fix"],sz_assign:["مشروع مادة","Course assignment"],sz_grad:["مشروع تخرج","Graduation project"],
+st_open:["مفتوحة","Open"],st_reserved:["محجوزة","Reserved"],st_approved:["موافقة المشرف","Supervisor approved"],st_done:["منجزة","Done"],
+m_kwh:["كيلوواط ساعة/سنة","kWh/year"],m_l:["لتر/سنة","L/year"],m_kg:["كغم/سنة","kg/year"],
+v_h:["صوت المبنى ومصنع المشاريع","Voice of the Building and the Project Factory"],
+v_lede:["اكتب المشكلة بجملة واحدة. المصنع يحدد حجمها ومحورها، يتحقق من تكرارها، ويحوّلها إلى بطاقة مشروع جاهزة.","Write the problem in one sentence. The factory sizes it, assigns a track, checks for duplicates, and turns it into a ready project card."],
+k_problem:["مشكلة في المبنى","A problem in the building"],k_idea:["فكرة مشروع عندي","My own project idea"],
+l_problem:["ما المشكلة؟","What is the problem?"],l_idea:["ما فكرتك؟","What is your idea?"],
+ph_problem:["مثال: إنارة قاعة ٣ تبقى شغّالة بعد آخر محاضرة","Example: Classroom 3's lights stay on after the last lecture"],ph_idea:["مثال: نموذج يتنبأ بعدد الحضور لإطفاء تبريد القاعات الفارغة","Example: a model that predicts attendance to switch off cooling in empty halls"],
+place:["المكان في المبنى","Place in the building"],send_factory:["أرسل إلى المصنع","Send to the factory"],
+rule:["شرط القبول: كل فكرة ترتبط بمكان في المبنى وبرقم تريد تغييره (كهرباء، ماء، أو نفايات).","Entry rule: every idea names a place in the building and a number it aims to change (electricity, water, or waste)."],
+factory_h:["مصنع المشاريع","Project Factory"],factory_empty:["بطاقة المشروع تظهر هنا بعد الإرسال.","The project card appears here after you send."],
+p1:["سُمعت","Heard"],p2:["صُنّفت","Sized"],p3:["فُحصت","Checked"],p4:["بطاقة","Card"],
+working:["المصنع يعمل…","The factory is working…"],
+offtopic:["الفكرة لم تكن مرتبطة بالمبنى، فربطناها هكذا:","The idea was not tied to the building, so it was tied like this:"],
+basic:["الذكاء الاصطناعي غير متاح الآن، فاستُخدم تصنيف بسيط. راجع البطاقة قبل إضافتها.","AI is not available right now, so basic sorting was used. Review the card before adding it."],
+sim_new:["جديدة على الكتالوج","New to the catalogue"],sim_close:["قريبة من فكرة موجودة","Close to an existing idea"],sim_dup:["مكررة على الأغلب","Probably a duplicate"],
+sim_with:["أقرب فكرة","Closest idea"],sim_scope:["المقارنة مع أفكار هذا الكتالوج فقط.","Compared with ideas in this catalogue only."],
+add:["أضف إلى الكتالوج","Add to catalogue"],add_res:["أضف واحجزها لي","Add and reserve it for me"],merge:["ضمّ البلاغ إلى الفكرة","Add my report to idea"],
+added:["أضيفت البطاقة إلى الكتالوج","Card added to the catalogue"],merged:["أضيف بلاغك إلى الفكرة","Your report was added to the idea"],
+c_h:["كتالوج الأفكار","Idea catalogue"],c_lede:["تصفّح الأفكار واحجز واحدة لتصير مشروعك. الفكرة المحجوزة لا يستطيع غيرك اختيارها.","Browse the ideas and reserve one as your project. Once reserved, nobody else can choose it."],
+search:["ابحث في الأفكار","Search ideas"],all_tracks:["كل المحاور","All tracks"],all_sizes:["كل الأحجام","All sizes"],all_status:["كل الحالات","All statuses"],all_rooms:["كل الأماكن","All places"],
+shown:["فكرة","ideas"],details:["تفاصيل المشروع","Project details"],d_method:["الطريقة","Method"],d_data:["البيانات المطلوبة","Data to collect"],d_measure:["كيف يُقاس النجاح","How success is measured"],
+measure_tpl:["قياس {m} قبل التنفيذ وبعده في المكان نفسه.","Measure {m} before and after, in the same place."],
+reserve:["احجز الفكرة","Reserve idea"],release:["ألغِ الحجز","Release"],discuss:["ناقشها مع المستشار","Discuss with advisor"],approve:["وافق كمشرف","Approve as supervisor"],markdone:["سجّلها منجزة","Mark done"],
+yours:["محجوزة لك","Reserved by you"],taken:["هذه الفكرة محجوزة ولا يمكن اختيارها","This idea is reserved and cannot be chosen"],
+until:["الحجز ينتهي خلال {d} يوماً إن لم يوافق مشرف","Hold expires in {d} days without supervisor approval"],
+reserved_ok:["حُجزت الفكرة باسمك مع ختم زمني","Idea reserved under your name with a timestamp"],released_ok:["أُلغي الحجز","Reservation released"],
+readonly:["لا تملك صلاحية التعديل في هذه النسخة","You cannot make changes in this copy"],
+reports:["البلاغات","Reports"],est:["الأثر التقديري","Estimated impact"],
+step1:["مسودة خاصة","Private draft"],
+a_h:["المستشار","Advisor"],a_lede:["ثلاثة أدوات: مستشار يناقش فكرتك، المبنى نفسه يجيبك، وحاسبة تقدّر الفكرة قبل صرف أي دينار.","Three tools: an advisor to discuss your idea, the building answering for itself, and an estimator to test an idea before spending a dinar."],
+mo_adv:["مستشار المشاريع","Project advisor"],mo_bld:["اسأل المبنى","Ask the building"],mo_what:["جرّب قبل ما تصرف","Try before you spend"],
+note_adv:["محادثة خاصة: لا تُحفظ في قاعدة بياناتنا وتختفي عند إغلاق الصفحة. نموذج الذكاء الاصطناعي يعالج الرسائل ليجيب.","Private chat: it is not saved in our database and disappears when you close the page. The AI model processes messages in order to reply."],
+note_bld:["المبنى يجيب من بيانات الكتالوج الحالية.","The building answers from the current catalogue data."],
+note_what:["تقديرات من الذكاء الاصطناعي مبنية على افتراضات، وليست أسعاراً موثّقة. تحقق من كل رقم قبل الاعتماد عليه.","AI estimates built on assumptions, not verified prices. Check every figure before relying on it."],
+send:["أرسل","Send"],stop:["أوقف","Stop"],publish:["حوّل المحادثة إلى فكرة واحجزها","Turn this chat into an idea and reserve it"],clear:["امسح المحادثة","Clear chat"],
+ph_adv:["اشرح فكرتك أو اسأل عن فكرة من الكتالوج","Describe your idea or ask about one from the catalogue"],ph_bld:["اسأل المبنى عن حاله","Ask the building how it is doing"],ph_what:["اكتب فكرة: مثلاً استبدال إنارة القاعات بمصابيح LED","Type an idea: for example, replacing hall lighting with LEDs"],
+thinking:["يفكّر…","Thinking…"],
+ai_off:["الذكاء الاصطناعي غير متاح في هذه النسخة.","AI is not available in this copy."],ai_rate:["طلبات كثيرة. انتظر قليلاً ثم حاول.","Too many requests. Wait a little and try again."],ai_err:["تعذّر الحصول على جواب. حاول مرة أخرى.","Could not get an answer. Try again."],ai_refused:["تعذّر الرد على هذا الطلب. غيّر الصياغة.","This request could not be answered. Rephrase it."],
+need_chat:["اكتب للمستشار أولاً","Write to the advisor first"],
+s_adv1:["عندي فكرة عن الطاقة الشمسية للسطح، كيف أجعلها مشروع تخرج؟","I have an idea about solar on the roof. How do I make it a graduation project?"],
+s_adv2:["أي أفكار الكتالوج تناسب طالب مرحلة ثالثة؟","Which catalogue ideas suit a third-year student?"],
+s_bld1:["شلونك اليوم؟","How are you today?"],s_bld2:["شنو أكثر مشكلة محد حاجزها؟","Which problem has nobody claimed?"],s_bld3:["أي غرفة تشتكي أكثر؟","Which room complains the most?"],
+s_what1:["ألواح شمسية على السطح","Solar panels on the roof"],s_what2:["استبدال إنارة القاعات بـ LED","Replace hall lighting with LEDs"],s_what3:["جدار نباتي على الواجهة الغربية","A green wall on the west side"],
+w_cost:["الكلفة التقديرية","Estimated cost"],w_save:["التوفير السنوي","Yearly saving"],w_pay:["مدة الاسترداد","Payback"],w_conf:["الثقة","Confidence"],w_ass:["الافتراضات","Assumptions"],w_ver:["ما يجب التحقق منه","What to verify"],iqd:["دينار","IQD"],cf_low:["منخفضة","Low"],cf_medium:["متوسطة","Medium"],cf_high:["عالية","High"],months:["شهر","months"],
+i_h:["لوحة الأثر","Impact board"],i_lede:["ما يمكن أن يوفّره المبنى لو نُفّذت أفكاره، وما تحقق فعلاً.","What the building could save if its ideas were carried out, and what has been achieved so far."],
+i_pot:["الأثر حسب المحور","Impact by track"],i_flow:["تقدّم الأفكار","Progress of ideas"],i_next:["المرحلة القادمة","Next phase"],
+est_note:["كل الأرقام تقديرات أولية كُتبت مع الأفكار التجريبية، وتُستبدل بقياسات حقيقية عند تنفيذ كل مشروع.","All figures are first estimates written with the sample ideas, to be replaced by real measurements as each project is carried out."],
+col_track:["المحور","Track"],col_ideas:["أفكار","Ideas"],col_pot:["ممكن","Potential"],col_prog:["قيد التنفيذ","In progress"],col_ach:["متحقق","Achieved"],
+r1:["رصيد أخضر للطلبة","Green credit for students"],r1d:["نقاط عن كل بلاغ ومشروع منجز تنتهي بشهادة من الكلية.","Points for each report and finished project, leading to a college certificate."],
+r2:["أرشيف أفكار المسابقة","Competition idea archive"],r2d:["كل مشاريع الفرق المشاركة تدخل الكتالوج حتى لا تموت بعد الحفل.","Every team's project enters the catalogue so none die after the ceremony."],
+r3:["بيانات مفتوحة","Open data"],r3d:["كل مشروع منجز ينشر بياناته، فتملك الكلية أول مجموعة بيانات عن استدامة حرم جامعي عراقي.","Each finished project publishes its data, giving the college the first dataset on campus sustainability in Iraq."],
+r4:["نسخة لكل كلية","A copy for every college"],r4d:["المنصة نفسها تُفتح لأي كلية في جامعة بغداد بمخططها الخاص.","The same platform opens for any college at the University of Baghdad with its own floor plan."],
+foot:["المبنى الحي · مسابقة مستقبلنا أخضر.","Living Building · Our Future is Green competition."],
+mode_shared:["البيانات مشتركة بين كل من يفتح الصفحة.","Data is shared between everyone who opens the page."],mode_local:["البيانات محفوظة على هذا المتصفح فقط.","Data is kept in this browser only."],
+room_count:["أفكار","ideas"]
+};
+let lang="ar";
+try{const s=localStorage.getItem("lb_lang");if(s==="en"||s==="ar")lang=s}catch(e){}
+const t=(k,v)=>{let s=(T[k]||[k,k])[lang==="ar"?0:1];if(v)for(const x in v)s=s.replace("{"+x+"}",v[x]);return s};
+const bi=o=>o?(o[lang]||o.ar||o.en||""):"";
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>Number(n||0).toLocaleString("en-US");
+const $=id=>document.getElementById(id);
+
+/* ---------- building ---------- */
+const TRACKS=["energy","clean","waste","smart"],SIZES=["fix","assign","grad"],METRICS=["kwh","l","kg"];
+const ROOMS=[
+{id:"lab1",ar:"مختبر ١",en:"Lab 1",p:[[86,16,147,60]]},{id:"lab2",ar:"مختبر ٢",en:"Lab 2",p:[[233,16,147,60]]},
+{id:"lab3",ar:"مختبر ٣",en:"Lab 3",p:[[380,16,147,60]]},{id:"lab4",ar:"مختبر ٤",en:"Lab 4",p:[[527,16,147,60]]},
+{id:"corr",ar:"الممرات",en:"Corridors",p:[[86,76,588,30],[86,106,110,364],[644,106,30,240],[574,346,100,190]]},
+{id:"stairs",ar:"الدرج",en:"Stairs",sa:"درج",p:[[196,106,44,40],[674,76,80,36],[86,470,30,36],[674,332,80,36]]},
+{id:"wc1",ar:"حمام ١",en:"Bathroom 1",se:"Bath 1",p:[[6,76,80,44]]},{id:"wc2",ar:"حمام ٢",en:"Bathroom 2",se:"Bath 2",p:[[6,120,80,44]]},{id:"wc3",ar:"حمام ٣",en:"Bathroom 3",se:"Bath 3",p:[[6,164,80,44]]},
+{id:"h1",ar:"قاعة دراسية ١",en:"Classroom 1",sa:"قاعة ١",se:"Class 1",p:[[6,208,80,80]]},
+{id:"lab5",ar:"مختبر ٥",en:"Lab 5",p:[[6,288,80,60]]},{id:"lab6",ar:"مختبر ٦",en:"Lab 6",p:[[6,348,80,60]]},{id:"lab7",ar:"مختبر ٧",en:"Lab 7",p:[[6,408,80,62]]},
+{id:"h2",ar:"قاعة دراسية ٢",en:"Classroom 2",sa:"قاعة ٢",se:"Class 2",p:[[116,326,62,62]]},{id:"h3",ar:"قاعة دراسية ٣",en:"Classroom 3",sa:"قاعة ٣",se:"Class 3",p:[[116,388,62,62]]},
+{id:"offN",ar:"المكاتب الفردية (الصف العلوي)",en:"Individual offices (top row)",sa:"مكاتب فردية",se:"Offices",div:6,p:[[246,106,322,40]]},
+{id:"offE",ar:"المكاتب الفردية (الصف الأيمن)",en:"Individual offices (right row)",sa:"مكاتب",se:"Offices",div:6,p:[[574,106,70,240]]},
+{id:"cafe",ar:"الكافتيريا",en:"Cafeteria",p:[[246,152,100,52]]},
+{id:"garden",ar:"المساحة الخضراء",en:"Green area",sa:"نباتات",se:"Plants",cls:"garden",p:[[236,360,180,160],[440,190,84,70]]},
+{id:"dean",ar:"غرفة العميد",en:"Dean's office",sa:"العميد",se:"Dean",p:[[674,112,80,55]]},
+{id:"asst",ar:"معاون العميد",en:"Assistant dean",sa:"المعاون",se:"Asst. dean",p:[[674,167,80,55]]},
+{id:"exam",ar:"الوحدة الامتحانية",en:"Exam unit",sa:"الامتحانية",p:[[674,222,80,55]]},
+{id:"staff",ar:"غرفة التدريسيين",en:"Professors' room",sa:"التدريسيون",se:"Professors",p:[[674,277,80,55]]},
+{id:"h4",ar:"قاعة دراسية ٤",en:"Classroom 4",sa:"قاعة ٤",se:"Class 4",p:[[674,368,80,66]]},{id:"h5",ar:"قاعة دراسية ٥",en:"Classroom 5",sa:"قاعة ٥",se:"Class 5",p:[[674,434,80,66]]},
+{id:"hall",ar:"القاعة الكبرى",en:"Main hall",p:[[454,356,120,114]]},
+{id:"expo",ar:"قاعة المعارض",en:"Exhibition room",sa:"المعارض",se:"Exhibition",p:[[484,476,90,60]]},{id:"pray",ar:"المصلى",en:"Prayer room",se:"Prayer",p:[[424,476,60,44]]},
+{id:"roof",ar:"السطح",en:"Roof",p:[[6,572,365,40]]},{id:"yard",ar:"المدخل والحديقة (مشترك)",en:"Entrance and garden (shared)",p:[[389,572,365,40]]},
+{id:"all",ar:"الطابق كله",en:"Whole floor"}
+];
+const roomName=id=>{const r=ROOMS.find(r=>r.id===id)||ROOMS[ROOMS.length-1];return lang==="ar"?r.ar:r.en};
+
+/* ---------- 30 sample ideas ---------- */
+const S=(n,track,room,metric,est,size,ta,te,pa,pe,ma,me,da,de)=>({id:"s"+n,n,track,room,metric,est,size,title:{ar:ta,en:te},problem:{ar:pa,en:pe},method:{ar:ma,en:me},data:{ar:da,en:de},seed:true});
+const SEEDS=[
+S(1,"energy","h2","kwh",4200,"grad","كاشف القاعات الفارغة","Empty-hall detector","الإنارة والتبريد يبقيان شغّالين في القاعات بعد خروج الطلبة.","Lights and cooling stay on in halls after students leave.","نموذج رؤية حاسوبية يعدّ الأشخاص ويرسل تنبيهاً عند بقاء القاعة فارغة ومضاءة.","A vision model counts people and alerts staff when a hall stays empty with its lights on.","عدد الأشخاص وحالة الإنارة كل دقيقة، من دون حفظ الصور.","People count and light state each minute, with no images stored."),
+S(2,"energy","all","kwh",6500,"grad","جدول محاضرات يوفّر الطاقة","Energy-aware timetable","المحاضرات موزّعة على كل القاعات، فيعمل تبريد الطابق كله لساعات إشغال قليلة.","Lectures are spread across every hall, so the whole floor is cooled for few occupied hours.","خوارزمية تحسين تعيد توزيع القاعات لتجميع المحاضرات المتزامنة وإطفاء الباقي.","An optimiser reassigns rooms so simultaneous lectures cluster and the rest switch off.","جدول المحاضرات، سعة القاعات، أعداد الطلبة لكل مادة.","Timetable, hall capacities, students per course."),
+S(3,"energy","corr","kwh",1500,"assign","عدّاد ذكي بهاتف قديم","Smart meter from an old phone","لا أحد يعرف كم يستهلك الطابق في أي لحظة.","Nobody knows how much the floor consumes at any moment.","هاتف يصوّر العدّاد كل دقيقة ونموذج يقرأ الأرقام ويرسم الاستهلاك.","A phone photographs the meter each minute and a model reads the digits into a live graph.","قراءات العدّاد مع الوقت.","Timestamped meter readings."),
+S(4,"energy","hall","kwh",2800,"assign","مستشار درجة التبريد","Cooling setpoint advisor","المكيّفات تُضبط على أدنى درجة مهما كان الطقس.","ACs are set to the lowest temperature whatever the weather.","نموذج يقترح درجة الضبط لكل قاعة من توقعات الطقس وعدد الحضور.","A model suggests each hall's setpoint from the weather forecast and attendance.","درجات الحرارة الخارجية والداخلية وعدد الحضور.","Outdoor and indoor temperatures and attendance."),
+S(5,"energy","lab1","kwh",3100,"assign","حواسيب المختبر لا تنام","Lab PCs that never sleep","حواسيب المختبر تبقى شغّالة طوال الليل وأيام العطل.","Lab computers stay on all night and over weekends.","سكربت يسجّل ساعات العمل الفعلية ويجدول الإطفاء التلقائي خارج الدوام.","A script logs real usage hours and schedules automatic shutdown outside working hours.","سجلات تشغيل الحواسيب وجدول المختبر.","PC uptime logs and the lab schedule."),
+S(6,"energy","h3","kwh",900,"assign","خريطة ضوء النهار","Daylight map","صفوف الإنارة القريبة من الشبابيك تعمل وضوء الشمس يكفي.","Light rows next to the windows are on while daylight is enough.","قياس شدة الضوء بالهاتف وتحديد الصفوف التي يمكن إطفاؤها في كل ساعة.","Measure light levels by phone and work out which rows can be off at each hour.","قراءات شدة الإضاءة حسب المقعد والساعة.","Light readings by seat and hour."),
+S(7,"energy","all","kwh",1200,"fix","بوت إطفاء نهاية الدوام","End-of-day shutdown bot","لا توجد جولة إطفاء ثابتة عند نهاية الدوام.","There is no fixed switch-off round at the end of the day.","بوت تيليغرام يرسل قائمة تحقق لكل قاعة ويسجّل ما أُطفئ.","A Telegram bot sends a checklist per hall and records what was switched off.","سجل الإطفاء اليومي.","Daily switch-off log."),
+S(8,"energy","h4","kwh",300,"fix","أجهزة العرض في وضع الاستعداد","Projectors on standby","أجهزة العرض والشاشات تبقى في وضع الاستعداد طوال اليوم.","Projectors and screens sit on standby all day.","حصر الأجهزة وقياس استهلاك الاستعداد ثم إضافة مؤقّت إطفاء.","Inventory the devices, measure standby draw, then add a switch-off timer.","قدرة الاستعداد لكل جهاز وساعات الاستخدام.","Standby power per device and hours of use."),
+S(9,"energy","h2","kwh",3600,"grad","توقّع إشغال الغد","Tomorrow's occupancy forecast","التبريد يبدأ صباحاً في كل القاعات حتى التي لا محاضرات فيها.","Cooling starts in every hall each morning, including halls with no lectures.","نموذج تنبؤ بالإشغال يحدد القاعات التي تحتاج تبريداً مسبقاً فقط.","An occupancy forecasting model picks only the halls that need pre-cooling.","الجدول، سجلات الحضور، الطقس.","Timetable, attendance records, weather."),
+S(10,"clean","roof","kwh",18000,"assign","خريطة الطاقة الشمسية للسطح","Roof solar map","سطح المبنى فارغ ولا أحد يعرف كم ينتج لو غُطّي بالألواح.","The roof is empty and nobody knows what panels on it would produce.","قياس المساحة من صور الأقمار الصناعية وتقدير الإنتاج السنوي بأداة مجانية.","Measure the area from satellite imagery and estimate yearly output with a free tool.","مساحة السطح، الاتجاه، الإشعاع الشمسي في بغداد.","Roof area, orientation, solar irradiance in Baghdad."),
+S(13,"clean","yard","kwh",150,"fix","مقعد شحن شمسي","Solar charging bench","الطلبة يشحنون هواتفهم من مآخذ القاعات طوال اليوم.","Students charge phones from hall sockets all day.","لوح صغير وبطارية على مقعد في المدخل مع عدّاد للشحنات.","A small panel and battery on a bench at the entrance, with a charge counter.","عدد الشحنات والطاقة المنتَجة.","Number of charges and energy produced."),
+S(15,"clean","yard","kwh",2500,"assign","متتبّع ساعات المولّدة","Generator-hours tracker","لا يوجد سجل لساعات تشغيل المولّدة ووقودها وانبعاثاتها.","There is no record of generator hours, fuel, or emissions.","تطبيق يسجّل انقطاع الكهرباء الوطنية ويحسب الوقود والانبعاثات ويقترح بدائل.","An app logs grid outages, calculates fuel and emissions, and suggests alternatives.","أوقات الانقطاع واستهلاك الوقود.","Outage times and fuel use."),
+S(16,"waste","corr","kg",240,"assign","صندوق عدّ القناني","Bottle-counting box","مئات قناني الماء البلاستيكية تُرمى يومياً مع النفايات العامة.","Hundreds of plastic water bottles go into general waste every day.","صندوق جمع مع كاميرا هاتف تتعرّف على القنينة وتحسبها لمرحلة الطالب.","A collection box with a phone camera that recognises each bottle and credits the student's stage.","عدد القناني لكل مرحلة يومياً.","Bottles per stage per day."),
+S(17,"waste","yard","kg",60,"fix","جدار القناني الأخضر","Green bottle wall","مدخل الكلية بلا نباتات والقناني تذهب إلى النفايات.","The entrance has no plants and bottles go to waste.","تحويل القناني المجموعة إلى أحواض زراعة معلّقة على جدار المدخل.","Turn collected bottles into planters hung on the entrance wall.","عدد القناني المستخدمة والنباتات الحيّة.","Bottles reused and plants alive."),
+S(18,"waste","exam","kg",180,"assign","متتبّع الورق والطباعة","Paper and printing tracker","الطباعة على وجه واحد واستمارة ورقية لكل طلب.","Single-sided printing and a paper form for every request.","عدّ الصفحات المطبوعة وتحويل الاستمارات المتكررة إلى رقمية.","Count printed pages and move the most repeated forms online.","عدد الصفحات شهرياً وأنواع الاستمارات.","Pages per month and form types."),
+S(19,"waste","corr","kg",300,"grad","مساعد الفرز بالكاميرا","Camera sorting helper","حاويات الفرز تُملأ بنفايات مختلطة لأن الناس لا يعرفون أين يرمون.","Sorting bins fill with mixed waste because people don't know where things go.","نموذج تصنيف صور يخبرك بالحاوية الصحيحة عند توجيه الهاتف نحو النفاية.","An image classifier tells you the right bin when you point a phone at an item.","صور نفايات مصنّفة من الكلية.","Labelled images of waste from the college."),
+S(20,"waste","corr","kg",90,"assign","توقّع امتلاء الحاويات","Bin-fill forecast","الحاويات تفيض قبل الظهر في أيام وتبقى فارغة في أيام أخرى.","Bins overflow before noon on some days and stay empty on others.","نموذج يتنبأ بوقت الامتلاء من الجدول وعدد الحضور لتحديد وقت التفريغ.","A model predicts fill time from the timetable and attendance to set collection times.","مستوى الامتلاء مرتين يومياً.","Fill level twice a day."),
+S(21,"waste","lab5","kg",150,"assign","جرد النفايات الإلكترونية","E-waste inventory","حواسيب وقطع قديمة مخزّنة بلا استخدام.","Old computers and parts sit in storage unused.","قاعدة بيانات للقطع مع نموذج يقترح ما يُعاد استخدامه في مشاريع الطلبة.","A parts database with a model that suggests what can be reused in student projects.","قائمة الأجهزة وحالتها.","Device list and condition."),
+S(22,"waste","h1","kg",120,"assign","اختبارات قصيرة بلا ورق","Paperless quizzes","كل اختبار قصير يستهلك رزمة ورق.","Every quiz uses a ream of paper.","تجربة اختبارات إلكترونية في مادة واحدة ومقارنة الورق المستهلك.","Pilot online quizzes in one course and compare the paper used.","عدد الأوراق لكل اختبار قبل وبعد.","Sheets per quiz before and after."),
+S(26,"smart","garden","l",25000,"assign","ماء المكيّفات للحديقة","AC water for the garden","ماء تكثيف المكيّفات يقطر على الأرض طوال الصيف.","AC condensate drips onto the ground all summer.","تجميع الماء بخراطيم ونموذج يتنبأ بالكمية اليومية من الطقس لجدولة الري.","Collect it by hose and predict the daily yield from weather to schedule irrigation.","كمية الماء المجمّعة والحرارة والرطوبة.","Water collected, temperature, humidity."),
+S(27,"smart","h5","kwh",2000,"grad","ماسح القاعة بصورة واحدة","One-photo room scanner","لا يوجد جرد لما في كل قاعة من مكيّفات وإنارة وشبابيك.","There is no inventory of each hall's ACs, lights, and windows.","نموذج رؤية يعدّ الأجهزة من صورة ويعطي القاعة درجة خضراء واقتراحات.","A vision model counts devices from a photo and gives the hall a green score and fixes.","صور القاعات وجرد يدوي للمقارنة.","Hall photos and a manual inventory for comparison."),
+S(28,"smart","h4","kwh",1700,"assign","خريطة الراحة الحرارية","Thermal comfort map","قاعة باردة جداً وأخرى حارة في الوقت نفسه.","One hall is freezing while another is hot at the same time.","تصويت الطلبة حار أو بارد عبر رمز QR ونموذج يقترح إعادة ضبط المكيّفات.","Students vote hot or cold by QR code and a model suggests how to rebalance the ACs.","الأصوات حسب القاعة والساعة.","Votes by hall and hour."),
+S(29,"smart","h2","kwh",2200,"assign","خطة تظليل الجدار الغربي","West-wall shading plan","الجدار الغربي يسخن بعد الظهر ويرفع حمل التبريد.","The west wall heats up in the afternoon and raises the cooling load.","حساب مسار الشمس وتحديد أفضل مواضع التظليل أو النباتات المتسلقة.","Calculate the sun path and find the best spots for shading or climbing plants.","اتجاه المبنى ودرجات حرارة الجدار.","Building orientation and wall temperatures."),
+S(30,"smart","lab1","kwh",800,"grad","مستشار التهوية","Ventilation advisor","المختبر يُغلق تماماً فيصير الهواء خانقاً، أو تُفتح الشبابيك والتبريد يعمل.","The lab is sealed until the air is stuffy, or windows are opened while cooling runs.","نموذج يقدّر جودة الهواء من عدد الحضور ويقترح أوقات تهوية قصيرة.","A model estimates air quality from occupancy and suggests short airing times.","عدد الحضور وأوقات فتح الشبابيك.","Occupancy and window-opening times.")
+];
+SEEDS.forEach((x,i)=>x.n=i+1);
+
+/* ---------- state + storage ---------- */
+const HOSTED=!!(window.claude&&typeof window.claude.use==="function");
+const HOLD=21*864e5;
+const store={db:null,uid:null,role:HOSTED?"student":"dean",preview:null,sb:null,token:null};
+let added={},st={},apv={};
+const roleNow=()=>store.preview||store.role;
+const isStaff=()=>["dean","supervisor"].includes(roleNow());
+const isDean=()=>roleNow()==="dean";
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+function loadLocal(){added=lsGet("lb_ideas",{});st=lsGet("lb_state",{});apv=lsGet("lb_apv",{});const pl=lsGet("lb_plan",null);if(pl)applyPlan(pl);store.uid=lsGet("lb_uid",null)||("u"+Math.random().toString(36).slice(2,10));lsSet("lb_uid",store.uid)}
+const pick=(v,list,d)=>list.includes(v)?v:d;
+const two=o=>({ar:String((o&&o.ar)||(o&&o.en)||"").slice(0,400),en:String((o&&o.en)||(o&&o.ar)||"").slice(0,400)});
+function clean(o,id){o=o||{};return{id:id||String(o.id||""),track:pick(o.track,TRACKS,"smart"),room:pick(o.room,ROOMS.map(r=>r.id),"all"),metric:pick(o.metric,METRICS,"kwh"),est:Math.max(0,Math.min(1e7,Math.round(Number(o.est)||0))),size:pick(o.size,SIZES,"assign"),title:two(o.title),problem:two(o.problem),method:two(o.method),data:two(o.data),c:Number(o.c)||0}}
+function ideas(){const extra=Object.keys(added).map(k=>clean(added[k],k)).sort((a,b)=>a.c-b.c);extra.forEach((x,i)=>x.n=SEEDS.length+i+1);return SEEDS.concat(extra)}
+function statusOf(id){const s=st[id]||{},a=apv[id]||{};if(a.done)return"done";if(s.by&&a.ok&&a.by===s.by)return"approved";if(s.by&&Date.now()-Number(s.at||0)<HOLD)return"reserved";return"open"}
+const mine=id=>{const s=st[id];return!!(s&&s.by&&s.by===store.uid&&statusOf(id)!=="open")};
+const reportsOf=id=>1+Number((st[id]&&st[id].rep)||0);
+async function saveIdea(idea){added[idea.id]=idea;if(store.db)await store.db.doc("ideas/"+idea.id).set(idea);else lsSet("lb_ideas",added)}
+async function saveState(id,obj){if(store.db)await store.db.doc("state/"+id).set(obj);st[id]=obj;if(!store.db)lsSet("lb_state",st)}
+async function saveApproval(id,obj){if(!isStaff())throw new Error("staff");if(store.db)await store.db.doc("approvals/"+id).set(obj);apv[id]=obj;if(!store.db)lsSet("lb_apv",apv)}
+async function savePlan(){if(!isStaff())return;const o={grad:DP.grad,assign:DP.assign,letter:DP.letter||null,why:DP.why||{},endorsed:DP.endorsed||0,at:Date.now()};try{if(store.db)await store.db.doc("deanplan/main").set(o);else lsSet("lb_plan",o)}catch(e){toast(t("readonly"))}}
+function applyPlan(o){if(!o)return;DP.endorsed=Number(o.endorsed)||0;DP.grad=pick(Number(o.grad),[2,3,4,5,6,8],4);DP.assign=pick(Number(o.assign),[2,3,4,5,6,8],4);DP.letter=o.letter?two(o.letter):null;DP.why={};if(o.why&&typeof o.why==="object")for(const k in o.why)DP.why[Number(k)]=two(o.why[k])}
+let toastT;function toast(m){const e=$("toast");e.textContent=m;e.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove("on"),2600)}
+
+async function reserve(id){
+  if(statusOf(id)!=="open")return toast(t("taken"));
+  try{
+    if(store.db){const snap=await store.db.doc("state/"+id).get();const v=snap.exists?snap.data():null;if(v){st[id]={...v};if(statusOf(id)!=="open"){renderAll();return toast(t("taken"))}}}
+    await saveState(id,{...(st[id]||{}),by:store.uid,at:Date.now(),ok:false,done:false});toast(t("reserved_ok"))
+  }catch(e){toast(t("readonly"))}
+  renderAll()
+}
+async function approveAct(id,obj){if(!isStaff())return toast(t("staff_only"));try{await saveApproval(id,obj)}catch(e){toast(t("readonly"))}renderAll()}
+async function setState(id,patch,msg){try{await saveState(id,{...(st[id]||{}),...patch});if(msg)toast(msg)}catch(e){toast(t("readonly"))}renderAll()}
+
+/* ---------- similarity (local, no AI) ---------- */
+const STOP=new Set("the a an of to in on at for and or is are be it its this that with by from as into than then so no not all any each per who what when which while their there after before can cannot nobody every في من على الى إلى عن مع او أو ان أن كل هذا هذه ذلك التي الذي لا ما هو هي كان يكون بعد قبل عند حتى ثم لان لأن بلا دون مهما".split(" ").map(norm1));
+function norm1(w){return w.toLowerCase().replace(/[ً-ْـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي")}
+function stem(w){if(/[؀-ۿ]/.test(w)){w=w.replace(/^(وال|بال|كال|فال|لل|ال)/,"");if(w.length>3)w=w.replace(/^[وفبل]/,"");if(w.length>4)w=w.replace(/(ات|ون|ين|ها|هم|يه|ه|ي)$/,"")}else{if(w.length>5)w=w.replace(/(ing|ers|er|ed|es|s)$/,"");else if(w.length>3)w=w.replace(/s$/,"")}return w}
+function toks(s){return norm1(String(s)).split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>1&&!STOP.has(w)).map(stem).filter(w=>w.length>1)}
+const ideaText=i=>[i.title.ar,i.title.en,i.problem.ar,i.problem.en,i.method.ar,i.method.en].join(" ");
+function similar(text,list,skip){
+  const docs=list.filter(i=>i.id!==skip).map(i=>({i,tk:toks(ideaText(i))}));const N=docs.length+1,df=new Map();
+  docs.forEach(d=>new Set(d.tk).forEach(w=>df.set(w,(df.get(w)||0)+1)));
+  const idf=w=>Math.log(1+N/(1+(df.get(w)||0)));
+  const vec=tk=>{const m=new Map();tk.forEach(w=>m.set(w,(m.get(w)||0)+1));let n=0;m.forEach((v,w)=>{const x=(1+Math.log(v))*idf(w);m.set(w,x);n+=x*x});return{m,n:Math.sqrt(n)||1}};
+  const q=vec(toks(text));let best=null,score=0,qsum=0;q.m.forEach(x=>qsum+=x);
+  docs.forEach(d=>{const v=vec(d.tk);let dot=0,hit=0;q.m.forEach((x,w)=>{const y=v.m.get(w);if(y){dot+=x*y;hit+=x}});const sc=.5*dot/(q.n*v.n)+.5*(qsum?hit/qsum:0);if(sc>score){score=sc;best=d.i}});
+  return{idea:best,score}
+}
+const simBand=s=>s>=.42?"dup":s>=.22?"close":"new";
+
+/* ---------- AI ---------- */
+const AI={sample:null};
+const aiOn=()=>!!AI.sample||(!HOSTED&&location.protocol!=="file:");
+function loose(text){try{return JSON.parse(text)}catch(e){}const a=text.indexOf("{"),b=text.lastIndexOf("}");if(a>=0&&b>a)return JSON.parse(text.slice(a,b+1));throw{code:"invalid_json"}}
+async function selfHost(messages,json,signal){const h={"content-type":"application/json"};if(store.token)h.authorization="Bearer "+store.token;const r=await fetch("api/ai",{method:"POST",headers:h,body:JSON.stringify({messages,json:!!json}),signal});if(!r.ok)throw{code:r.status===429?"rate_limited":"upstream_error"};const j=await r.json();return String(j.text||"")}
+async function aiJSON(prompt){if(AI.sample)return AI.sample.json(prompt,{modelTier:"quick",cache:false});if(!HOSTED)return loose(await selfHost([{role:"user",content:prompt}],true));throw{code:"not_granted"}}
+async function aiChat(turns,onText,signal){if(AI.sample){const r=await AI.sample(turns,{modelTier:"quick",cache:false,signal,onText:u=>onText(u.text)});return r.text}if(!HOSTED){const x=await selfHost(turns,false,signal);onText(x);return x}throw{code:"not_granted"}}
+const aiMsg=e=>{const c=e&&e.code;return c==="rate_limited"?t("ai_rate"):c==="refused"?t("ai_refused"):(c==="not_granted"||c==="sampling_disabled"||c==="not_declared"||c==="capability_disabled")?t("ai_off"):t("ai_err")};
+const CONTEXT=`Living Building (المبنى الحي) is a platform of the College of Artificial Intelligence, University of Baghdad. The college occupies the second floor of a building it shares with another college. Every idea must make this building more sustainable, and student course or graduation projects are how the work gets done.
+Tracks: energy = rationing and managing energy use; clean = clean and renewable energy; waste = waste management and recycling; smart = smart sustainable building technology (also water, comfort, maintenance).
+The floor has a wide corridor on one side, a corridor along the top and one down the other side that widens near the main hall, with an open area of green plants in the middle. Place ids: h1 h2 h3 h4 h5 classrooms; hall the main hall where all departments share lessons; lab1 to lab7 computer labs; offN and offE rows of individual offices for department heads and professors; dean dean's office; asst assistant dean; exam exam unit; staff shared professors' room; expo exhibition room where students show projects and robots at events; pray prayer room; cafe cafeteria; garden the green plants area in the middle of the floor; wc1 wc2 wc3 bathrooms; corr corridors; stairs; roof; yard shared entrance and garden; all whole floor.`;
+const CARD_JSON=`{"on_topic":true,"size":"assign","track":"energy","room":"h1","metric":"kwh","est":1200,"title":{"ar":"","en":""},"problem":{"ar":"","en":""},"method":{"ar":"","en":""},"data":{"ar":"","en":""},"tie":{"ar":"","en":""}}`;
+const CARD_RULES=`Card rules: size "fix" = a maintenance job with no research in it; "assign" = a course assignment of two to four weeks; "grad" = a graduation project. metric is the one number the project aims to change per year: "kwh" electricity, "l" litres of water, "kg" waste. est is a cautious rough yearly figure as an integer; prefer low. title is at most 6 words. problem, method (which AI or data technique and what it does) and data (what to collect) are one short sentence each. Write Arabic in clear Modern Standard Arabic and English in plain English. If the text is not about making this building more sustainable, set on_topic false, still write the card as the closest version that IS tied to a place in the building and a measurable number, and explain that link in one sentence in "tie"; otherwise leave "tie" strings empty.
+Reply with only JSON in exactly this shape: ${CARD_JSON}`;
+function localCard(text,room,kind){
+  const x=norm1(text);const has=(...w)=>w.some(k=>x.includes(norm1(k)));
+  let track="smart",metric="kwh",est=500;
+  if(has("شمس","solar","لوح","panel","متجدد","renewable","مولد","generator")){track="clean";est=1500}
+  else if(has("نفاي","waste","قنين","قناني","bottle","ورق","paper","بلاستك","بلاستيك","plastic","تدوير","recycl","حاوي","bin")){track="waste";metric="kg";est=80}
+  else if(has("ماء","مياه","water","حنفي","tap","تسرب","leak","يقطر","drip")){track="smart";metric="l";est=15000}
+  else if(has("كهرب","electric","انار","light","مكيف","تبريد","cool","ac ","طاق","energy","حاسوب","حاسب","computer")){track="energy";est=1000}
+  const size=kind==="idea"?"assign":(has("مكسور","عطل","broken","يقطر","drip")?"fix":"assign");
+  const short=text.trim().split(/\s+/).slice(0,6).join(" ");
+  return{on_topic:true,size,track,room,metric,est,title:{ar:short,en:short},problem:{ar:text.trim(),en:text.trim()},method:{ar:"تُحدَّد الطريقة مع المشرف.",en:"Method to be agreed with a supervisor."},data:{ar:"قياس الوضع الحالي لمدة أسبوعين.",en:"Two weeks of baseline measurements."},tie:{ar:"",en:""}}
+}
+
+/* ---------- render: shell ---------- */
+const VIEWS=["building","voice","catalogue","advisor","dean","impact"];
+let presetRoom=null;
+function view(){const h=location.hash.slice(1);if(h.startsWith("voice-"))return"voice";return VIEWS.includes(h)?h:"building"}
+function readPreset(){const h=location.hash.slice(1);if(h.startsWith("voice-")){const r=h.slice(6);if(ROOMS.some(x=>x.id===r)){presetRoom=r;kind="problem"}}}
+function renderShell(){
+  document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";document.title=t("name");
+  document.querySelectorAll("[data-i]").forEach(e=>e.textContent=t(e.dataset.i));
+  $("langBtn").textContent=lang==="ar"?"English":"العربية";
+  $("signOut").hidden=!store.sb;$("signOut").textContent=t("signout");$("gateLang").textContent=lang==="ar"?"English":"العربية";
+  const cfg=window.LB_CONFIG||{};$("gateText").textContent=t("auth_p")+((cfg.allowedDomains||[]).length?" "+t("auth_domains",{d:cfg.allowedDomains.join("، ")}):"");$("gateEmail").placeholder="name@"+((cfg.allowedDomains||[])[0]||"university.edu.iq");
+  const rc=$("roleChip");rc.hidden=false;rc.textContent=t("you_are",{r:t("role_"+roleNow())});
+  const va=$("viewAs");va.hidden=store.role!=="dean";if(!va.hidden)va.innerHTML=["dean","supervisor","student"].map(r=>`<option value="${r}"${r===roleNow()?" selected":""}>${esc(t("view_as",{r:t("role_"+r)}))}</option>`).join("");
+  const v=view();$("nav").innerHTML=VIEWS.map(x=>`<a href="#${x}"${x===v?' aria-current="page"':""}>${esc(t("n_"+x))}</a>`).join("");
+  VIEWS.forEach(x=>$("v-"+x).classList.toggle("on",x===v));
+  $("modeFoot").textContent=store.db?t("mode_shared"):t("mode_local");
+}
+const chipT=k=>`<span class="chip t-${k}"><i></i>${esc(t("tr_"+k))}</span>`;
+const sums=(list,f)=>{const o={kwh:0,l:0,kg:0};list.filter(f).forEach(i=>o[i.metric]+=i.est);return o};
+
+function renderBuilding(){
+  const all=ideas(),open=all.filter(i=>statusOf(i.id)==="open"),res=all.filter(i=>["reserved","approved"].includes(statusOf(i.id))),done=all.filter(i=>statusOf(i.id)==="done");
+  const pot=sums(all,i=>statusOf(i.id)!=="done");
+  $("tiles").innerHTML=[[open.length,"tl_open"],[res.length,"tl_res"],[done.length,"tl_done"],[pot.kwh,"tl_kwh"],[pot.l,"tl_l"],[pot.kg,"tl_kg"]].map(([v,k])=>`<div class="tile"><span class="v">${fmt(v)}</span><span class="k">${esc(t(k))}</span></div>`).join("");
+  const cnt={};all.forEach(i=>{if(statusOf(i.id)!=="done")cnt[i.room]=(cnt[i.room]||0)+1});const mx=Math.max(1,...Object.values(cnt));
+  const rooms=ROOMS.filter(r=>r.p).map(r=>{const c=cnt[r.id]||0,op=(c/mx*.42).toFixed(2),nm=esc(lang==="ar"?(r.sa||r.ar):(r.se||r.en));let h="";
+    r.p.forEach(([x,y,w,hh],k)=>{h+=`<rect x="${x}" y="${y}" width="${w}" height="${hh}"/><rect class="heat" x="${x+1}" y="${y+1}" width="${w-2}" height="${hh-2}" opacity="${op}"/>`;
+      if(r.div)for(let d=1;d<r.div;d++)h+=w>hh?`<path class="dim" d="M${x+w/r.div*d} ${y}v${hh}"/>`:`<path class="dim" d="M${x} ${y+hh/r.div*d}h${w}"/>`;
+      if(r.id==="stairs"&&w>=40)h+=`<text class="sm" x="${x+w/2}" y="${y+hh/2+4}" text-anchor="middle">${nm}</text>`});
+    const [x,y,w,hh]=r.p[0],cx=x+w/2,cy=y+hh/2+(r.div&&hh>w?hh/(2*r.div):0);let px=cx,py=cy;
+    if(r.id==="stairs"){px=x+w+12;py=cy}
+    else if(w>=50&&hh>=50){h+=`<text class="${w<=90?"sm":""}" x="${cx}" y="${c?cy-5:cy+4}" text-anchor="middle">${nm}</text>`;py=cy+13}
+    else if(w>hh){const tight=w<=90&&c;h+=`<text class="${w<=90?"sm":""}" x="${tight?cx-11:cx}" y="${cy+4}" text-anchor="middle">${nm}</text>`;px=x+w-(tight?14:18)}
+    if(c)h+=`<circle class="pin" cx="${px}" cy="${py}" r="10"/><text class="pint" x="${px}" y="${py+4}" text-anchor="middle">${c}</text>`;
+    return`<g class="room ${r.cls||""}" tabindex="0" role="button" data-room="${r.id}" aria-label="${esc(roomName(r.id))}: ${c} ${esc(t("room_count"))}"><title>${esc(roomName(r.id))}</title>${h}</g>`}).join("");
+  $("plan").innerHTML=`<svg viewBox="0 0 760 622" role="img" aria-label="${esc(t("plan_h"))}"><path class="dim" d="M6 556H754"/><text class="dimt" x="380" y="567" text-anchor="middle">2F  ·  ROOF / GROUND</text>${rooms}</svg>`;
+  $("trackBars").innerHTML=TRACKS.map(k=>{const n=all.filter(i=>i.track===k).length;return`<div class="barrow"><span>${chipT(k)}</span><div class="track"><i class="bar-${k}" style="width:${n/all.length*100}%"></i></div><span class="num">${n}</span></div>`}).join("");
+  const rep={};all.forEach(i=>rep[i.room]=(rep[i.room]||0)+reportsOf(i.id));
+  $("loud").innerHTML=Object.entries(rep).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([r,n])=>`<tr><td>${esc(roomName(r))}</td><td class="n">${n}</td></tr>`).join("");
+}
+
+/* ---------- render: catalogue ---------- */
+const F={q:"",track:"",size:"",status:"",room:""};
+function fillSelects(){
+  const opt=(v,l,sel)=>`<option value="${v}"${v===sel?" selected":""}>${esc(l)}</option>`;
+  $("fTrack").innerHTML=opt("",t("all_tracks"),F.track)+TRACKS.map(k=>opt(k,t("tr_"+k),F.track)).join("");
+  $("fSize").innerHTML=opt("",t("all_sizes"),F.size)+SIZES.map(k=>opt(k,t("sz_"+k),F.size)).join("");
+  $("fStatus").innerHTML=opt("",t("all_status"),F.status)+["open","reserved","approved","done"].map(k=>opt(k,t("st_"+k),F.status)).join("");
+  $("fRoom").innerHTML=opt("",t("all_rooms"),F.room)+ROOMS.map(r=>opt(r.id,roomName(r.id),F.room)).join("");
+  const cur=presetRoom||$("rRoom").value||"all";presetRoom=null;$("rRoom").innerHTML=ROOMS.map(r=>opt(r.id,roomName(r.id),cur)).join("");
+  $("fQ").placeholder=t("search");["fTrack","fSize","fStatus","fRoom","fQ"].forEach(id=>$(id).setAttribute("aria-label",$(id).options?$(id).options[0].text:t("search")));
+}
+function cardHTML(i,opts){
+  opts=opts||{};const s=statusOf(i.id),me=mine(i.id),sx=st[i.id]||{};
+  const left=Math.max(0,Math.ceil((HOLD-(Date.now()-Number(sx.at||0)))/864e5));
+  const order=["open","reserved","approved","done"],pos=order.indexOf(s);
+  let acts="";
+  if(!opts.preview){
+    if(s==="open")acts+=`<button class="btn sm" data-act="reserve" data-id="${i.id}">${esc(t("reserve"))}</button>`;
+    if(me&&s!=="done")acts+=`<button class="btn alt sm" data-act="release" data-id="${i.id}">${esc(t("release"))}</button>`;
+    if(isStaff()&&s==="reserved")acts+=`<button class="btn alt sm" data-act="approve" data-id="${i.id}">${esc(t("approve"))}</button>`;
+    if(isStaff()&&s==="approved")acts+=`<button class="btn alt sm" data-act="done" data-id="${i.id}">${esc(t("markdone"))}</button>`;
+    acts+=`<button class="ghost" data-act="discuss" data-id="${i.id}">${esc(t("discuss"))}</button>`;
+  }
+  return`<article class="card k-${i.track}"><div class="head"><h3>${esc(bi(i.title))}</h3><span class="id">#${i.n||"new"}</span></div>
+  <div class="meta">${chipT(i.track)}<span class="chip">${esc(t("sz_"+i.size))}</span><span class="chip">${esc(roomName(i.room))}</span>${opts.preview?"":`<span class="pill s-${s}">${esc(me&&s==="reserved"?t("yours"):t("st_"+s))}</span>`}</div>
+  <p>${esc(bi(i.problem))}</p>
+  <p class="est"><span class="muted">${esc(t("est"))}:</span> <span class="num">${fmt(i.est)}</span> ${esc(t("m_"+i.metric))}${opts.preview?"":` · ${esc(t("reports"))}: <span class="num">${reportsOf(i.id)}</span>`}</p>
+  ${s==="reserved"&&!opts.preview?`<p class="small muted">${esc(t("until",{d:left}))}</p>`:""}
+  <details${opts.preview?" open":""}><summary>${esc(t("details"))}</summary><dl><div><dt>${esc(t("d_method"))}</dt><dd>${esc(bi(i.method))}</dd></div><div><dt>${esc(t("d_data"))}</dt><dd>${esc(bi(i.data))}</dd></div><div><dt>${esc(t("d_measure"))}</dt><dd>${esc(t("measure_tpl",{m:t("m_"+i.metric)}))}</dd></div></dl>
+  ${opts.preview?"":`<div class="steps"><span class="on">${esc(t("step1"))}</span>${order.slice(1).map((o,k)=>`<span class="${pos>=k+1?"on":""}">${esc(t("st_"+o))}</span>`).join("")}</div>`}</details>
+  ${acts?`<div class="row">${acts}</div>`:""}</article>`
+}
+function renderCatalogue(){
+  const q=norm1(F.q.trim());
+  const list=ideas().filter(i=>(!F.track||i.track===F.track)&&(!F.size||i.size===F.size)&&(!F.status||statusOf(i.id)===F.status)&&(!F.room||i.room===F.room)&&(!q||norm1(ideaText(i)).includes(q)));
+  $("fCount").textContent=list.length+" "+t("shown");
+  $("cards").innerHTML=list.map(i=>cardHTML(i)).join("");
+}
+
+/* ---------- voice + factory ---------- */
+let kind="problem",draft=null,busy=false;
+function renderVoice(){
+  $("kProblem").setAttribute("aria-pressed",kind==="problem");$("kIdea").setAttribute("aria-pressed",kind==="idea");
+  $("txtLabel").textContent=t(kind==="problem"?"l_problem":"l_idea");$("rText").placeholder=t(kind==="problem"?"ph_problem":"ph_idea");
+  renderResult()
+}
+function pipe(n){$("pipe").innerHTML=[1,2,3,4].map(k=>`<div class="${k<=n?"on":""}"><b>0${k}</b>${esc(t("p"+k))}</div>`).join("")}
+function renderResult(){
+  if(busy){pipe(1);$("result").innerHTML=`<p class="muted">${esc(t("working"))}</p>`;return}
+  if(!draft){pipe(0);$("result").innerHTML=`<p class="muted">${esc(t("factory_empty"))}</p>`;return}
+  pipe(4);const d=draft,band=simBand(d.sim.score),pct=Math.round(d.sim.score*100);
+  let h="";
+  if(d.basic)h+=`<p class="note">${esc(t("basic"))}</p>`;
+  if(d.card.on_topic===false&&bi(d.card.tie))h+=`<p class="note"><b>${esc(t("offtopic"))}</b> ${esc(bi(d.card.tie))}</p>`;
+  h+=cardHTML({...d.idea,n:0},{preview:true}).replace("#new","");
+  h+=`<div class="note ${band==="new"?"ok":band==="dup"?"bad":""}"><b>${esc(t("sim_"+band))}</b>${d.sim.idea?` · ${esc(t("sim_with"))}: #${d.sim.idea.n} ${esc(bi(d.sim.idea.title))}`:""}<div class="row" style="margin-top:6px"><div class="meter"><i style="width:${pct}%"></i></div><span class="num">${pct}%</span></div><span class="small muted">${esc(t("sim_scope"))}</span></div>`;
+  h+=`<div class="row">`;
+  if(band==="dup"&&d.sim.idea)h+=`<button class="btn" data-fact="merge">${esc(t("merge"))} #${d.sim.idea.n}</button><button class="btn alt" data-fact="add">${esc(t("add"))}</button>`;
+  else h+=`<button class="btn" data-fact="add">${esc(t("add"))}</button><button class="btn alt" data-fact="addres">${esc(t("add_res"))}</button>`;
+  h+=`</div>`;$("result").innerHTML=h
+}
+function buildDraft(card,basic){
+  const idea=clean(card,"n"+Date.now().toString(36)+Math.random().toString(36).slice(2,5));idea.c=Date.now();
+  draft={card,idea,basic:!!basic,sim:similar(ideaText(idea),ideas())}
+}
+async function runFactory(text,room,k){
+  busy=true;draft=null;$("rSend").disabled=true;renderResult();
+  let card=null,basic=false;
+  if(aiOn()){try{card=await aiJSON(`${CONTEXT}\n\nA member of the college submitted this ${k==="idea"?"project idea":"problem report"} (place chosen: ${room}):\n"""${text.slice(0,600)}"""\n\nTurn it into one project card.\n${CARD_RULES}`)}catch(e){toast(aiMsg(e))}}
+  if(!card||typeof card!=="object"){card=localCard(text,room,k);basic=true}
+  if(!ROOMS.some(r=>r.id===card.room))card.room=room;
+  buildDraft(card,basic);busy=false;$("rSend").disabled=false;renderResult()
+}
+async function factoryAct(a){
+  if(!draft)return;const d=draft;
+  try{
+    if(a==="merge"&&d.sim.idea){const id=d.sim.idea.id;await saveState(id,{...(st[id]||{}),rep:Number((st[id]&&st[id].rep)||0)+1});toast(t("merged"))}
+    else{await saveIdea(d.idea);toast(t("added"));if(a==="addres")await saveState(d.idea.id,{by:store.uid,at:Date.now(),ok:false,done:false})}
+    draft=null;$("rText").value="";F.q="";F.track="";F.size="";F.status="";F.room="";location.hash="catalogue"
+  }catch(e){toast(t("readonly"))}
+  renderAll()
+}
+
+/* ---------- advisor ---------- */
+let mode="adv";const chats={adv:[],bld:[]};let ctl=null,whatif=null,whatBusy=false;
+function stats(){const all=ideas();const by=f=>all.filter(f);return{
+  open:by(i=>statusOf(i.id)==="open").length,reserved:by(i=>["reserved","approved"].includes(statusOf(i.id))).length,done:by(i=>statusOf(i.id)==="done").length,
+  rooms:ROOMS.map(r=>({place:r.en,open_ideas:by(i=>i.room===r.id&&statusOf(i.id)==="open").length,reports:by(i=>i.room===r.id).reduce((a,i)=>a+reportsOf(i.id),0)})).filter(r=>r.reports),
+  ideas:all.map(i=>({n:i.n,title:i.title.en,title_ar:i.title.ar,track:i.track,size:i.size,place:(ROOMS.find(r=>r.id===i.room)||{}).en,status:statusOf(i.id),est:i.est+" "+i.metric+"/year"}))}}
+function rules(){
+  const data=JSON.stringify(stats());
+  if(mode==="bld")return`${CONTEXT}\n\nYou ARE the building. Speak in the first person as the College of AI's floor. Answer only from the data below; if something is not in the data, say you do not know yet. When the user writes Arabic, answer in friendly Iraqi dialect; when they write English, answer in English. Keep answers to 2-4 short sentences, plain text, no markdown, no lists. Mention idea numbers like #12 when useful, and nudge people to reserve unclaimed ideas. All impact numbers are rough estimates; say so if you quote one.\n\nCurrent data: ${data}`;
+  return`${CONTEXT}\n\nYou are the green project advisor of this platform. You help a student shape a course or graduation project that makes the building more sustainable. Whatever they propose, make sure two things get answered before you call the idea ready: (1) how does it reduce this building's electricity, water, or waste, and in which place; (2) how will they measure the change. If the idea is unrelated to the building, do not reject it: suggest how to tie it to a place and a number. Point to similar catalogue ideas by number when relevant, and tell them if an idea is already reserved. Suggest a free or low-cost way to do things. Reply in the user's language (Arabic or English), in 2-5 short sentences, plain text, no markdown.\n\nCatalogue: ${data}`
+}
+function renderAdvisor(){
+  $("modes").innerHTML=[["adv","mo_adv"],["bld","mo_bld"],["what","mo_what"]].map(([m,k])=>`<button type="button" data-mode="${m}" aria-pressed="${m===mode}">${esc(t(k))}</button>`).join("");
+  $("modeNote").textContent=t("note_"+mode);$("cText").placeholder=t("ph_"+mode);
+  const isChat=mode!=="what";$("chat").hidden=!isChat;$("chatTools").hidden=mode!=="adv";$("whatif").hidden=isChat;
+  const st2=mode==="adv"?["s_adv1","s_adv2"]:mode==="bld"?["s_bld1","s_bld2","s_bld3"]:["s_what1","s_what2","s_what3"];
+  $("starters").innerHTML=st2.map(k=>`<button type="button" data-starter="${k}">${esc(t(k))}</button>`).join("");
+  if(isChat){const c=$("chat");c.innerHTML="";chats[mode].forEach(m=>{const d=document.createElement("div");d.className="msg "+(m.role==="user"?"u":"a");d.textContent=m.content;c.appendChild(d)});c.scrollTop=c.scrollHeight}
+  else renderWhat()
+}
+function renderWhat(){
+  const w=whatif,e=$("whatif");
+  if(whatBusy){e.innerHTML=`<p class="muted">${esc(t("thinking"))}</p>`;return}
+  if(!w){e.innerHTML="";return}
+  const list=a=>(Array.isArray(a)?a:[]).slice(0,6).map(x=>`<li>${esc(bi(x)||x)}</li>`).join("");
+  e.innerHTML=`<div class="stack"><h3>${esc(w.q)}</h3><p>${esc(bi(w.summary))}</p>
+  <div class="tiles"><div class="tile"><span class="v">${fmt(w.cost_low)} – ${fmt(w.cost_high)}</span><span class="k">${esc(t("w_cost"))} (${esc(t("iqd"))})</span></div>
+  <div class="tile"><span class="v">${fmt(w.saving)}</span><span class="k">${esc(t("w_save"))} · ${esc(t("m_"+pick(w.metric,METRICS,"kwh")))}</span></div>
+  <div class="tile"><span class="v">${fmt(w.payback_low)} – ${fmt(w.payback_high)}</span><span class="k">${esc(t("w_pay"))} (${esc(t("months"))})</span></div>
+  <div class="tile"><span class="v" style="font-family:var(--body)">${esc(t("cf_"+pick(w.confidence,["low","medium","high"],"low")))}</span><span class="k">${esc(t("w_conf"))}</span></div></div>
+  <div class="grid2"><div><h3>${esc(t("w_ass"))}</h3><ul>${list(w.assumptions)}</ul></div><div><h3>${esc(t("w_ver"))}</h3><ul>${list(w.verify)}</ul></div></div>
+  <p class="note">${esc(t("note_what"))}</p></div>`
+}
+async function sendChat(text){
+  text=text.trim();if(!text)return;
+  if(!aiOn())return toast(t("ai_off"));
+  if(mode==="what"){whatBusy=true;whatif=null;renderWhat();
+    try{const w=await aiJSON(`${CONTEXT}\n\nSomeone wants to test this idea for the building before spending money: """${text.slice(0,400)}"""\nGive a cautious first estimate for THIS floor (5 classrooms, one main hall, 7 computer labs, about 16 offices; hot dry Baghdad climate; costs in Iraqi dinar). You do not have verified local prices, so give wide ranges and say what must be checked. Reply with only JSON: {"summary":{"ar":"","en":""},"cost_low":0,"cost_high":0,"metric":"kwh","saving":0,"payback_low":0,"payback_high":0,"confidence":"low","assumptions":[{"ar":"","en":""}],"verify":[{"ar":"","en":""}]}\nsummary is two sentences. metric is kwh, l or kg per year. payback is in months. confidence is low, medium or high. 3-5 assumptions and 3-4 things to verify, each one short sentence in both languages.`);
+      whatif={...w,q:text}}catch(e){toast(aiMsg(e))}
+    whatBusy=false;renderWhat();return}
+  const list=chats[mode];list.push({role:"user",content:text});renderAdvisor();
+  const c=$("chat"),b=document.createElement("div");b.className="msg a";b.textContent=t("thinking");c.appendChild(b);c.scrollTop=c.scrollHeight;
+  ctl=new AbortController();$("cStop").hidden=false;$("cSend").disabled=true;
+  try{const ans=await aiChat([{role:"user",content:rules()},...list.slice(-12)],x=>{b.textContent=x;c.scrollTop=c.scrollHeight},ctl.signal);list.push({role:"assistant",content:ans})}
+  catch(e){if(e&&e.code==="cancelled"&&e.text)list.push({role:"assistant",content:e.text});else{b.remove();if(!(e&&e.code==="cancelled"))toast(aiMsg(e))}}
+  $("cStop").hidden=true;$("cSend").disabled=false;renderAdvisor()
+}
+async function publishChat(){
+  const list=chats.adv;if(!list.some(m=>m.role==="user"))return toast(t("need_chat"));
+  const talk=list.map(m=>(m.role==="user"?"Student: ":"Advisor: ")+m.content).join("\n").slice(-6000);
+  location.hash="voice";busy=true;draft=null;renderResult();
+  let card=null,basic=false;
+  try{card=await aiJSON(`${CONTEXT}\n\nBelow is a private conversation between a student and the project advisor. Write the student's final idea as one project card.\n"""${talk}"""\n${CARD_RULES}`)}catch(e){toast(aiMsg(e))}
+  if(!card||typeof card!=="object"){card=localCard(list.filter(m=>m.role==="user").map(m=>m.content).join(" ").slice(0,300),"all","idea");basic=true}
+  buildDraft(card,basic);busy=false;renderResult()
+}
+
+/* ---------- impact ---------- */
+function renderImpact(){
+  const all=ideas();const cell=o=>METRICS.filter(m=>o[m]).map(m=>`<span class="num">${fmt(o[m])}</span> ${esc(t("m_"+m))}`).join("<br>")||"–";
+  const row=(label,list)=>`<tr><td>${label}</td><td class="n">${list.length}</td><td>${cell(sums(list,()=>true))}</td><td>${cell(sums(list,i=>["reserved","approved"].includes(statusOf(i.id))))}</td><td>${cell(sums(list,i=>statusOf(i.id)==="done"))}</td></tr>`;
+  $("impactTable").innerHTML=`<thead><tr><th>${esc(t("col_track"))}</th><th class="n">${esc(t("col_ideas"))}</th><th>${esc(t("col_pot"))}</th><th>${esc(t("col_prog"))}</th><th>${esc(t("col_ach"))}</th></tr></thead><tbody>${TRACKS.map(k=>row(chipT(k),all.filter(i=>i.track===k))).join("")}</tbody>`;
+  $("flowBars").innerHTML=TRACKS.map(k=>{const l=all.filter(i=>i.track===k),d=l.filter(i=>statusOf(i.id)==="done").length,r=l.filter(i=>["reserved","approved"].includes(statusOf(i.id))).length,n=l.length||1;
+    return`<div class="barrow"><span>${esc(t("tr_"+k))}</span><div class="track"><i class="seg-done" style="width:${d/n*100}%"></i><i class="seg-res" style="width:${r/n*100}%"></i><i class="seg-open" style="width:${(n-d-r)/n*100}%"></i></div><span class="num">${d+r}/${l.length}</span></div>`}).join("");
+  $("road").innerHTML=[1,2,3,4].map(k=>`<div><b>${esc(t("r"+k))}</b><span class="small muted">${esc(t("r"+k+"d"))}</span></div>`).join("")
+}
+
+/* ---------- dean plan ---------- */
+const DP={grad:4,assign:4,letter:null,why:{},busy:false,endorsed:0};
+function planData(){
+  const live=ideas().filter(i=>statusOf(i.id)!=="done");
+  const mx={kwh:1,l:1,kg:1};ideas().forEach(i=>{mx[i.metric]=Math.max(mx[i.metric],i.est)});
+  const score=i=>.7*(Math.log(1+i.est)/Math.log(1+mx[i.metric]))+.3*Math.min(1,(reportsOf(i.id)-1)/4);
+  const rank=l=>l.map(i=>({i,s:score(i)})).sort((a,b)=>b.s-a.s);
+  const quick=rank(live.filter(i=>i.size==="fix")),assign=rank(live.filter(i=>i.size==="assign")).slice(0,DP.assign),grad=rank(live.filter(i=>i.size==="grad")).slice(0,DP.grad);
+  const all=[...quick,...assign,...grad],tot={kwh:0,l:0,kg:0};all.forEach(x=>tot[x.i.metric]+=x.i.est);
+  return{quick,assign,grad,all,tot}
+}
+function planRows(list,start){
+  if(!list.length)return`<p class="small muted">${esc(t("dn_none"))}</p>`;
+  return list.map((x,k)=>{const i=x.i,s=statusOf(i.id),why=DP.why[i.n];
+    return`<div class="prow"><span class="rk">${start+k}</span><div><b>${esc(bi(i.title))}</b> <span class="small muted num">#${i.n}</span>
+    <div class="meta" style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0">${chipT(i.track)}<span class="chip">${esc(roomName(i.room))}</span>${s!=="open"?`<span class="pill s-${s}">${esc(t("dn_inprog"))}</span>`:""}</div>
+    <div class="why">${esc(why?bi(why):t("dn_why",{e:fmt(i.est)+" "+t("m_"+i.metric),r:reportsOf(i.id),p:roomName(i.room)}))}</div></div>
+    <div class="sc"><span>${esc(t("dn_score"))}</span><div class="meter"><i style="width:${Math.round(x.s*100)}%"></i></div></div></div>`}).join("")
+}
+function renderDean(){
+  const opt=(n,sel)=>`<option value="${n}"${n===sel?" selected":""}>${n}</option>`;
+  $("dGrad").innerHTML=[2,3,4,5,6,8].map(n=>opt(n,DP.grad)).join("");$("dAssign").innerHTML=[2,3,4,5,6,8].map(n=>opt(n,DP.assign)).join("");
+  const d=planData();
+  const all=ideas(),prog=all.filter(i=>["reserved","approved"].includes(statusOf(i.id))).length,done=all.filter(i=>statusOf(i.id)==="done").length;
+  $("dTiles").innerHTML=[[d.all.length,"dn_t_n"],[prog,"dn_t_prog"],[done,"dn_t_done"],[d.tot.kwh,"dn_t_kwh"],[d.tot.l,"dn_t_l"],[d.tot.kg,"dn_t_kg"]].map(([v,k])=>`<div class="tile"><span class="v">${fmt(v)}</span><span class="k">${esc(t(k))}</span></div>`).join("");
+  const sec=(h,sub,list,start)=>`<div class="plan-sec"><h3>${esc(t(h))} <small>${esc(t(sub))}</small></h3>${planRows(list,start)}</div>`;
+  $("dMain").innerHTML=sec("dn_gradh","dn_grad_s",d.grad,1)+sec("dn_sem","dn_sem_s",d.assign,d.grad.length+1);
+  $("dQuick").innerHTML=sec("dn_quick","dn_quick_s",d.quick,d.grad.length+d.assign.length+1);
+  $("dLetterBox").hidden=!(DP.letter||DP.busy);$("dLetterText").textContent=DP.busy?t("dn_writing"):bi(DP.letter);
+  $("dLetter").disabled=DP.busy;
+  const sup=roleNow()==="supervisor";
+  $("dSizes").hidden=!sup;$("dLetter").hidden=!aiOn()||!sup;
+  $("dReadonly").hidden=false;$("dReadonly").className="note noprint"+(isDean()?" ok":"");
+  $("dReadonly").textContent=isDean()?t("dn_vip"):sup?t("dn_staffnote"):t("dn_ro");
+  $("dEndorse").hidden=!isDean();$("dEndorse").textContent=DP.endorsed?t("dn_unendorse"):t("dn_endorse");$("dEndorse").className=DP.endorsed?"btn alt sm":"btn";
+  const fd=n=>new Date(n).toLocaleDateString(lang==="ar"?"ar-IQ":"en-GB",{day:"numeric",month:"long",year:"numeric"});
+  $("dBadge").hidden=!DP.endorsed;if(DP.endorsed)$("dBadge").textContent=t("dn_endorsed",{d:fd(DP.endorsed)});
+}
+function planText(){
+  const d=planData(),L=(x,k)=>`${k}. ${bi(x.i.title)} (#${x.i.n}) · ${roomName(x.i.room)} · ${fmt(x.i.est)} ${t("m_"+x.i.metric)}`;
+  let n=1,out=[t("dn_h"),""];
+  if(DP.letter)out.push(bi(DP.letter),"");
+  [["dn_gradh",d.grad],["dn_sem",d.assign],["dn_quick",d.quick]].forEach(([h,l])=>{out.push(t(h)+":");l.forEach(x=>out.push(L(x,n++)));out.push("")});
+  out.push(t("dn_t_kwh")+": "+fmt(d.tot.kwh),t("dn_t_l")+": "+fmt(d.tot.l),t("dn_t_kg")+": "+fmt(d.tot.kg),"",t("dn_rule"));
+  return out.join("\n")
+}
+async function writeLetter(){
+  if(!aiOn())return toast(t("ai_off"));
+  const d=planData(),items=d.all.map(x=>({n:x.i.n,title:x.i.title.en,size:x.i.size,place:(ROOMS.find(r=>r.id===x.i.room)||{}).en,track:x.i.track,est:x.i.est+" "+x.i.metric+"/year",reports:reportsOf(x.i.id),status:statusOf(x.i.id)}));
+  DP.busy=true;renderDean();
+  try{const r=await aiJSON(`${CONTEXT}\n\nThis is next year's plan, already ranked by the platform: graduation projects, course projects and quick maintenance fixes.\n${JSON.stringify(items)}\nTotals if carried out: ${d.tot.kwh} kWh, ${d.tot.l} litres, ${d.tot.kg} kg per year (rough estimates).\nWrite (1) a short, respectful letter to the dean of the college presenting this plan: 4 to 6 sentences, what it does, what it costs (mostly student time and supervision), the estimated yearly savings stated as estimates, and the first step to approve; (2) one short sentence per item explaining why it is worth doing now. Arabic in formal Modern Standard Arabic, English in plain English. Reply with only JSON: {"letter":{"ar":"","en":""},"why":[{"n":1,"ar":"","en":""}]}`);
+    if(r&&r.letter){DP.letter=two(r.letter);DP.why={};(Array.isArray(r.why)?r.why:[]).forEach(w=>{if(w&&w.n)DP.why[Number(w.n)]=two(w)})}}
+  catch(e){toast(aiMsg(e))}
+  DP.busy=false;renderDean();savePlan()
+}
+function renderAll(){renderShell();fillSelects();renderBuilding();renderVoice();renderCatalogue();renderAdvisor();renderDean();renderImpact()}
+
+/* ---------- events ---------- */
+window.addEventListener("hashchange",()=>{readPreset();if(location.hash.startsWith("#voice-"))renderAll();else renderShell();window.scrollTo(0,0)});
+$("viewAs").onchange=e=>{store.preview=e.target.value==="dean"?null:e.target.value;renderAll()};
+$("langBtn").onclick=()=>{lang=lang==="ar"?"en":"ar";try{localStorage.setItem("lb_lang",lang)}catch(e){}renderAll()};
+$("plan").addEventListener("click",e=>{const g=e.target.closest("[data-room]");if(g){F.room=g.dataset.room;F.q="";F.track="";F.size="";F.status="";location.hash="catalogue";renderAll()}});
+$("plan").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){const g=e.target.closest("[data-room]");if(g){e.preventDefault();g.dispatchEvent(new MouseEvent("click",{bubbles:true}))}}});
+[["fTrack","track"],["fSize","size"],["fStatus","status"],["fRoom","room"]].forEach(([id,k])=>$(id).onchange=e=>{F[k]=e.target.value;renderCatalogue()});
+$("fQ").oninput=e=>{F.q=e.target.value;renderCatalogue()};
+$("cards").addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const id=b.dataset.id,a=b.dataset.act;
+  if(a==="reserve")reserve(id);
+  else if(a==="release")setState(id,{by:null,at:0,ok:false},t("released_ok"));
+  else if(a==="approve")approveAct(id,{ok:true,by:(st[id]||{}).by||null,at:Date.now(),done:false});
+  else if(a==="done")approveAct(id,{...(apv[id]||{}),done:true,at:Date.now()});
+  else if(a==="discuss"){const i=ideas().find(x=>x.id===id);mode="adv";location.hash="advisor";renderAll();$("cText").value=(lang==="ar"?"أريد العمل على الفكرة #":"I want to work on idea #")+i.n+" ("+bi(i.title)+"). "+(lang==="ar"?"من أين أبدأ؟":"Where do I start?");$("cText").focus()}});
+$("kProblem").onclick=()=>{kind="problem";renderVoice()};$("kIdea").onclick=()=>{kind="idea";renderVoice()};
+$("reportForm").addEventListener("submit",e=>{e.preventDefault();const x=$("rText").value.trim();if(x&&!busy)runFactory(x,$("rRoom").value||"all",kind)});
+$("result").addEventListener("click",e=>{const b=e.target.closest("[data-fact]");if(b)factoryAct(b.dataset.fact)});
+$("modes").addEventListener("click",e=>{const b=e.target.closest("[data-mode]");if(b){mode=b.dataset.mode;renderAdvisor()}});
+$("starters").addEventListener("click",e=>{const b=e.target.closest("[data-starter]");if(b)sendChat(t(b.dataset.starter))});
+$("chatForm").addEventListener("submit",e=>{e.preventDefault();const x=$("cText").value;$("cText").value="";sendChat(x)});
+$("cText").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("chatForm").requestSubmit()}});
+$("cStop").onclick=()=>{if(ctl)ctl.abort()};
+$("cClear").onclick=()=>{chats.adv=[];renderAdvisor()};
+$("cPublish").onclick=publishChat;
+$("dGrad").onchange=e=>{if(!isStaff())return;DP.grad=Number(e.target.value);DP.why={};renderDean();savePlan()};
+$("dAssign").onchange=e=>{if(!isStaff())return;DP.assign=Number(e.target.value);DP.why={};renderDean();savePlan()};
+$("dLetter").onclick=writeLetter;
+$("dEndorse").onclick=()=>{if(!isDean())return;DP.endorsed=DP.endorsed?0:Date.now();renderDean();savePlan()};
+$("dCopy").onclick=async()=>{try{await navigator.clipboard.writeText(planText());toast(t("copied"))}catch(e){toast(t("readonly"))}};
+const tryPrint=()=>{try{window.print()}catch(e){toast(t("noprint"))}};
+$("dPrint").onclick=tryPrint;
+
+/* ---------- self-hosted sign-in (Supabase) ---------- */
+function supaAdapter(sb){
+  const L={},split=p=>{const a=p.split("/");return{c:a[0],i:a[1]}};
+  const on=(c,f)=>{(L[c]=L[c]||[]).push(f);f();return()=>{L[c]=L[c].filter(x=>x!==f)}};
+  const fire=c=>{(c&&L[c]?[c]:Object.keys(L)).forEach(k=>L[k].forEach(f=>f()))};
+  const getDoc=async(c,i)=>{const{data,error}=await sb.from("docs").select("data").eq("coll",c).eq("id",i).maybeSingle();if(error)throw error;return{exists:!!data,data:()=>data?data.data:undefined}};
+  return{
+    doc(path){const{c,i}=split(path);return{
+      get:()=>getDoc(c,i),
+      async set(obj){const{error}=await sb.from("docs").upsert({coll:c,id:i,data:obj});if(error)throw error;fire(c)},
+      onSnapshot(next,err){return on(c,async()=>{try{next(await getDoc(c,i))}catch(e){err&&err(e)}})}}},
+    collection(c){return{onSnapshot(next,err){return on(c,async()=>{const{data,error}=await sb.from("docs").select("id,data").eq("coll",c);if(error){err&&err(error);return}next({docs:data.map(r=>({id:r.id,exists:true,data:()=>r.data}))})})}}},
+    start(){sb.channel("lb-docs").on("postgres_changes",{event:"*",schema:"public",table:"docs"},p=>fire((p.new&&p.new.coll)||(p.old&&p.old.coll))).subscribe();setInterval(()=>fire(),60000)}
+  }
+}
+function loadScript(src){return new Promise((ok,no)=>{const e=document.createElement("script");e.src=src;e.onload=ok;e.onerror=no;document.head.appendChild(e)})}
+function attachDB(db){
+  store.db=db;added={};st={};apv={};
+  const sub=(name,apply)=>db.collection(name).onSnapshot(s=>{const o={};s.docs.forEach(d=>{const v=d.data();if(v)o[d.id]={...v}});apply(o);renderAll()},()=>{});
+  sub("ideas",o=>added=o);sub("state",o=>st=o);sub("approvals",o=>apv=o);
+  db.doc("deanplan/main").onSnapshot(d=>{if(d.exists&&!DP.busy){applyPlan(d.data());renderAll()}},()=>{})
+}
+async function supaStart(){
+  const cfg=window.LB_CONFIG||{};if(!cfg.supabaseUrl||!cfg.supabaseAnonKey)return;
+  try{await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js")}catch(e){toast(t("ai_err"));return}
+  const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);store.sb=sb;
+  const{data:{session}}=await sb.auth.getSession();
+  sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT")location.reload()});
+  if(!session){store.role="guest";$("gate").hidden=false;renderAll();return}
+  store.uid=session.user.id;store.token=session.access_token;
+  sb.auth.onAuthStateChange((ev,se)=>{if(se)store.token=se.access_token});
+  const{data:prof}=await sb.from("profiles").select("role").eq("id",session.user.id).maybeSingle();
+  store.role=pick(prof&&prof.role,["student","supervisor","dean"],"student");store.preview=null;
+  const db=supaAdapter(sb);attachDB(db);db.start();renderAll()
+}
+$("gateForm").addEventListener("submit",async e=>{
+  e.preventDefault();const email=$("gateEmail").value.trim().toLowerCase(),cfg=window.LB_CONFIG||{},msg=$("gateMsg");
+  const dom=email.split("@")[1]||"";
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg.textContent=t("auth_err");return}
+  if((cfg.allowedDomains||[]).length&&!cfg.allowedDomains.includes(dom)){msg.textContent=t("auth_bad");return}
+  $("gateSend").disabled=true;
+  const{error}=await store.sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+  $("gateSend").disabled=false;
+  msg.textContent=error?(/not allowed|Database error/i.test(error.message||"")?t("auth_refused"):t("auth_err")):t("auth_sent",{e:email});
+});
+$("gateLang").onclick=()=>$("langBtn").click();
+$("signOut").onclick=()=>{if(store.sb)store.sb.auth.signOut()};
+
+/* ---------- start ---------- */
+loadLocal();readPreset();renderAll();
+if(!HOSTED&&location.protocol!=="file:")loadScript("config.js").then(supaStart).catch(()=>{});
+(async function connect(){
+  if(!HOSTED)return;
+  let db=null,user=null;
+  try{[db,user,AI.sample]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("sample")])}catch(e){}
+  if(user){try{const own=!!(await user.isOwner()),ed=!!(await user.canEdit());store.role=own?"dean":ed?"supervisor":"student"}catch(e){}try{const id=await user.id();if(id)store.uid=id}catch(e){}}
+  else store.role="guest";
+  if(db)attachDB(db);
+  renderAll()
+})();
+</script>
+</body>
+</html>
